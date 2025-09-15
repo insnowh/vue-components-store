@@ -14,6 +14,21 @@ const router = createRouter({
           name: 'dataAnalysis',
           component:  () => import('../views/DataAnalysis.vue'),
         },
+        {
+          path: '/userManagement',
+          name: 'dataAnalysis',
+          component:  () => import('../views/UserManagement.vue'),
+        },
+        {
+          path: '/chatHistory',
+          name: 'chatHistory',
+          component:  () => import('../views/ChatHistory.vue'),
+        },
+        {
+          path: '/chat',
+          name: 'chat',
+          component:  () => import('../views/Chat.vue'),
+        },
       ]
     },
   ],
