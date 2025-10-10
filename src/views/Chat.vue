@@ -4,38 +4,61 @@ import { reactive, ref } from 'vue';
     interface ChatUser {
         userName: string
         newsChatMesasge: string
+        chatMesasge: chatMesasge[]
         newsChatTime: string
         squareUrl: string
     }
+
+    interface chatMesasge {
+        time: string
+        userName: string
+        content: string
+    }
+
+
 
     let testUserList = ref<ChatUser[]>([
         {
             userName: '张三',
             newsChatMesasge: '你好啊，今天过得怎么样？',
+            chatMesasge: [{
+                time: '10:30',
+                userName: '张三',
+                content: '你好啊，今天过得怎么样？'
+            },
+            {
+                time: '10:32',
+                userName: '我',
+                content: '还不错，你呢？'
+            }],
             newsChatTime: '10:30',
             squareUrl:'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png'
         },
         {
             userName: '李四',
             newsChatMesasge: '今天心情不错，出去玩了',
+            chatMesasge: [],
             newsChatTime: '09:20',
             squareUrl:'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png'
         },
         {
             userName: '王五',
             newsChatMesasge: '工作有点忙，没时间聊天',
+            chatMesasge: [],
             newsChatTime: '昨天',
             squareUrl:'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png'
         },
         {
             userName: '赵六',
             newsChatMesasge: '最近在学习Vue3，很有趣',
+            chatMesasge: [],
             newsChatTime: '前天',
             squareUrl:'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png'
         },
         {
             userName: '钱七',
             newsChatMesasge: '周末一起去爬山吧！',
+            chatMesasge: [],
             newsChatTime: '周五',
             squareUrl:'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png'
         },
@@ -43,19 +66,26 @@ import { reactive, ref } from 'vue';
 
     let selectChatUser = (item:ChatUser) => {
         console.log('点击了用户',item)
+        if (chatUser.value === item) {
+            chatUser.value = undefined
+            return
+        }
+        chatUser.value = item
     }
+
+    let chatUser = ref<ChatUser>()
 </script>
 
 <template>
   <el-row>
-    <el-col :span="6" style="background-color: #F7F7F7;box-sizing: border-box;padding-right: 10px;">
+    <el-col :span="6" style="background-color: #F7F7F7;box-sizing: border-box;padding: 5px 10px 5px 0px;">
       <div v-for="(item,index) in testUserList" :key="index" class="item-wrapper" @click="selectChatUser(item)">
         <!-- 透明遮罩层：移除 touchstart.prevent 避免非被动监听警告 -->
         <div class="overlay" tabindex="-1" aria-hidden="true" @mousedown.prevent></div>
         <div class="block">
           <el-row style="width: 100%;">
             <el-col class="avatar" :span="6">
-              <el-avatar shape="square" :size="50" :src="item.squareUrl" />
+              <el-avatar shape="square" :size="40" :src="item.squareUrl" />
             </el-col>
             <el-col :span="18">
               <div class="chatTop">
@@ -72,7 +102,35 @@ import { reactive, ref } from 'vue';
       </div>
     </el-col>
     <el-col :span="18" style="background-color: #EDEDED;">
-        
+      <div v-if="chatUser" class="chatArea">
+        <div class="top">
+          {{ chatUser.userName }}
+        </div>
+        <div class="content">
+          <div v-for="(item,index) in chatUser.chatMesasge" :key="index">
+            <div class="sendTime">
+              <!-- <div v-if="chatUser.chatMesasge[(index-1)||0].time-item.time">
+
+              </div> -->
+            </div>
+            <div class="userAvatar">
+              <div v-if="item.userName==chatUser.userName">
+                对面发送 {{ item.content }}
+              </div>
+              <div v-else>
+                我发送 {{ item.content }}
+              </div>
+            </div>
+            <div class="userSendContent"></div>
+          </div>
+        </div>
+        <div class="bottom">
+          
+        </div>
+      </div>
+      <div v-else>
+        <el-empty description="请选择聊天用户"></el-empty>
+      </div>
     </el-col>
   </el-row>
 </template>
@@ -144,4 +202,49 @@ import { reactive, ref } from 'vue';
     display: flex;
      height: 100%;
  }
+
+ .userName{
+  font-size: 15px;
+ }
+
+ .newsChatTime{
+  color: #858585;
+  font-size: 15px;
+ }
+
+ .newsChatMesasge{
+  color: #858585;
+  
+ }
+
+ 
+/* 新增：使用 Grid 布局使 chatArea 内部竖直分布并按比率占位 */
+.chatArea {
+  display: grid;
+  grid-template-rows: 0.7fr 6fr 3.3fr; /* top / content / bottom */
+  gap: 0; /* 若需间距可调整 */
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* top / content / bottom 的样式调整 */
+.chatArea .top {
+  padding: 30px;
+  border-bottom: 1px solid transparent;
+  overflow: hidden;
+}
+
+.chatArea .content {
+  overflow: auto; /* 内容可滚动 */
+  padding: 30px;
+  background: transparent;
+}
+
+.chatArea .bottom {
+  padding: 30px;
+  border-top: 1px solid transparent;
+  overflow: hidden;
+}
 </style>
+135406700+insnowh@users.noreply.github.com
