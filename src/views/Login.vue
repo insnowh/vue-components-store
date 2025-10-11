@@ -13,6 +13,8 @@ import {
   ElMessage
 } from 'element-plus'
 
+import { login } from '../api/Login'
+
 import 'element-plus/es/components/form/style/css'
 import 'element-plus/es/components/form-item/style/css'
 import 'element-plus/es/components/input/style/css'
@@ -21,6 +23,7 @@ import 'element-plus/es/components/radio/style/css'
 import 'element-plus/es/components/row/style/css'
 import 'element-plus/es/components/col/style/css'
 import 'element-plus/es/components/card/style/css'
+import router from '@/router'
 
 type LoginForm = {
   username: string
@@ -104,6 +107,15 @@ function submitLogin() {
     ElMessage.success(`登录: ${loginForm.username}`)
     console.log('login payload', { ...loginForm })
     // TODO: 调用后端登录接口
+    login(loginForm).then(res => {
+      console.log('login response', res)
+      // 处理登录成功逻辑，如存储token，跳转页面等
+      ElMessage.success('登录成功')
+      router.push('/index')
+    }).catch(err => {
+      console.error('login error', err)
+      ElMessage.error('登录失败，请检查用户名和密码')
+    })
   })
 }
 

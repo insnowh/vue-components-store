@@ -6,6 +6,13 @@ import { ElMessage, ElMessageBox, ElNotification } from 'element-plus';
 import cache from './cache'
 // import {useRequestStore} from '../stores/useRequestStore.js';
 
+// Extend Axios request config to include custom properties
+declare module 'axios' {
+    export interface InternalAxiosRequestConfig {
+        isCaptcha?: boolean;
+    }
+}
+
 // axios.defaults.baseURL = "http://localhost:8080"
 // axios.defaults.timeout = 10000;
 
@@ -18,7 +25,7 @@ import cache from './cache'
 let isRelogin = {show:false}
 
 const service = axios.create({
-    baseURL:"http://localhost:8080",
+    baseURL:"http://localhost:8083/web",
     timeout:10000
 })
 
@@ -105,7 +112,8 @@ service.interceptors.response.use(res=>{
 
 
     const code = res.data.code || 200
-    const msg = errorCode[res.data.code] || res.data.msg || errorCode["default"]
+    const codeKey = String(res.data.code) as keyof typeof errorCode;
+    const msg = errorCode[codeKey] || res.data.msg || errorCode["default"]
     if (code === 401) {
         if (!isRelogin.show) {
             isRelogin.show = true;

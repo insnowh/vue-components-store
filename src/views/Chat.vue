@@ -1,4 +1,5 @@
 <script lang='ts' setup>
+
 import { reactive, ref } from 'vue';
 
     interface ChatUser {
@@ -85,7 +86,7 @@ import { reactive, ref } from 'vue';
         <div class="block">
           <el-row style="width: 100%;">
             <el-col class="avatar" :span="6">
-              <el-avatar shape="square" :size="40" :src="item.squareUrl" />
+              <el-avatar shape="square" :size="40"  :src="item.squareUrl" />
             </el-col>
             <el-col :span="18">
               <div class="chatTop">
@@ -104,6 +105,7 @@ import { reactive, ref } from 'vue';
     <el-col :span="18" style="background-color: #EDEDED;">
       <div v-if="chatUser" class="chatArea">
         <div class="top">
+          <img src="" alt="">
           {{ chatUser.userName }}
         </div>
         <div class="content">
@@ -113,15 +115,19 @@ import { reactive, ref } from 'vue';
 
               </div> -->
             </div>
-            <div class="userAvatar">
-              <div v-if="item.userName==chatUser.userName">
-                对面发送 {{ item.content }}
+            <!-- <div class="userAvatar">
+              
+            </div> -->
+            <div class="userSendContent">
+              <div class="userAvatarLeft" v-if="item.userName==chatUser.userName">
+                <!-- <img src="" alt="" srcset=""> -->
+                {{ item.content }}
               </div>
-              <div v-else>
-                我发送 {{ item.content }}
+              <div class="userAvatarRight" v-else>
+                {{ item.content }}
+                <!-- <img src="" alt="" srcset=""> -->
               </div>
             </div>
-            <div class="userSendContent"></div>
           </div>
         </div>
         <div class="bottom">
@@ -129,7 +135,9 @@ import { reactive, ref } from 'vue';
         </div>
       </div>
       <div v-else>
-        <el-empty description="请选择聊天用户"></el-empty>
+        <el-empty description="请选择聊天用户">
+          <el-button type="primary">开始聊天</el-button>
+        </el-empty>
       </div>
     </el-col>
   </el-row>
@@ -245,5 +253,23 @@ import { reactive, ref } from 'vue';
   padding: 30px;
   border-top: 1px solid transparent;
   overflow: hidden;
+}
+
+.userAvatarLeft{
+  background-color: #FFFFFF;
+  padding: 10px;
+  border-radius: 10px;
+  max-width: 60%;
+  margin: 10px 0px;
+}
+
+.userAvatarRight{
+  background-color: #409EFF;
+  color: white;
+  padding: 10px;
+  border-radius: 10px;
+  max-width: 60%;
+  margin: 10px 0px;
+  margin-left: auto;
 }
 </style>
