@@ -8,6 +8,14 @@ type LoginForm = {
   captcha: string
 }
 
+type RegisterForm = {
+  username: string
+  email: string
+  password: string
+  confirm: string
+  sex: 0 | 1 | 2
+}
+
 function login(loginForm: LoginForm) {
     return request({
         url: '/login',
@@ -16,5 +24,13 @@ function login(loginForm: LoginForm) {
     });
 }
 
+function register(registerForm: RegisterForm) {
+    return request({
+        url: '/register',
+        method: 'post',
+        data: registerForm
+    });
+}
 
-export { login }
+
+export { login , register };

@@ -13,7 +13,7 @@ import {
   ElMessage
 } from 'element-plus'
 
-import { login } from '../api/Login'
+import { login , register } from '../api/Login'
 
 import 'element-plus/es/components/form/style/css'
 import 'element-plus/es/components/form-item/style/css'
@@ -36,7 +36,7 @@ type RegisterForm = {
   email: string
   password: string
   confirm: string
-  gender: '男' | '女' | '保密'
+  sex: 0 | 1 | 2
 }
 
 const isLogin = ref(true)
@@ -55,7 +55,7 @@ const registerForm = reactive<RegisterForm>({
   email: '',
   password: '',
   confirm: '',
-  gender: '保密'
+  sex: 2
 })
 
 const loginRules = {
@@ -125,6 +125,26 @@ function submitRegister() {
     ElMessage.success(`已注册: ${registerForm.username}`)
     console.log('register payload', { ...registerForm })
     // TODO: 调用后端注册接口
+
+    register(registerForm).then(res => {
+      console.log('register response', res)
+      // 处理注册成功逻辑，如提示登录，自动登录等
+      ElMessage.success('注册成功，请登录')
+      isLogin.value = true
+      // 重置注册表单
+      Object.assign(registerForm, {
+        username: '',
+        email: '',
+        password: '',
+        confirm
+      })
+    }).catch(err => {
+      console.error('register error', err)
+      ElMessage.error('注册失败，请重试')
+    })
+
+
+
   })
 }
 
@@ -214,10 +234,10 @@ function toggleMode() {
           </el-form-item>
 
           <el-form-item label="性别" prop="gender">
-            <el-radio-group v-model="registerForm.gender">
-              <el-radio label="男">男</el-radio>
-              <el-radio label="女">女</el-radio>
-              <el-radio label="保密">保密</el-radio>
+            <el-radio-group v-model="registerForm.sex">
+              <el-radio label="0">男</el-radio>
+              <el-radio label="1">女</el-radio>
+              <el-radio label="2">保密</el-radio>
             </el-radio-group>
           </el-form-item>
 

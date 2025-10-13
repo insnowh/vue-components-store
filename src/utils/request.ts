@@ -25,7 +25,7 @@ declare module 'axios' {
 let isRelogin = {show:false}
 
 const service = axios.create({
-    baseURL:"http://localhost:8083/web",
+    baseURL:"http://localhost:8083",
     timeout:10000
 })
 
