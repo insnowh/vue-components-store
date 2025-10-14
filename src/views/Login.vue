@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import {
   ElForm,
   ElFormItem,
@@ -13,7 +13,7 @@ import {
   ElMessage
 } from 'element-plus'
 
-import { login , register } from '../api/Login'
+import { login , register , getCaptcha } from '../api/Login'
 
 import 'element-plus/es/components/form/style/css'
 import 'element-plus/es/components/form-item/style/css'
@@ -24,6 +24,7 @@ import 'element-plus/es/components/row/style/css'
 import 'element-plus/es/components/col/style/css'
 import 'element-plus/es/components/card/style/css'
 import router from '@/router'
+import { setToken } from '../utils/auth'
 
 type LoginForm = {
   username: string
@@ -87,30 +88,41 @@ const registerRules = {
 }
 
 /* 简单验证码示例（前端演示用） */
-const captcha = ref(generateCaptcha())
-function generateCaptcha() {
-  return Math.random().toString(36).slice(2, 6).toUpperCase()
+// const captcha = ref(generateCaptcha())
+// function generateCaptcha() {
+//   return Math.random().toString(36).slice(2, 6).toUpperCase()
+// }
+// function refreshCaptcha() {
+//   captcha.value = generateCaptcha()
+// }
+
+const captcha = ref("")
+
+function changeCaptcha() {
+  getCaptcha().then((res:any)=>{
+    // console.log(res);
+    captcha.value = window.URL.createObjectURL(new Blob([res.data],{type:'image/png'}))
+    
+  })
 }
-function refreshCaptcha() {
-  captcha.value = generateCaptcha()
-}
+
+onMounted(()=>{
+  changeCaptcha()
+})
 
 /* 表单提交处理（示例：仅打印并显示提示） */
 function submitLogin() {
   loginFormRef.value?.validate((valid: boolean) => {
     if (!valid) return
-    if (loginForm.captcha.toUpperCase() !== captcha.value) {
-      ElMessage.error('验证码错误')
-      refreshCaptcha()
-      return
-    }
-    ElMessage.success(`登录: ${loginForm.username}`)
-    console.log('login payload', { ...loginForm })
+    
+    
     // TODO: 调用后端登录接口
     login(loginForm).then(res => {
       console.log('login response', res)
       // 处理登录成功逻辑，如存储token，跳转页面等
       ElMessage.success('登录成功')
+      console.log('login payload', { ...loginForm })
+      setToken(res.data.token)
       router.push('/index')
     }).catch(err => {
       console.error('login error', err)
@@ -136,7 +148,7 @@ function submitRegister() {
         username: '',
         email: '',
         password: '',
-        confirm
+        confirm:''
       })
     }).catch(err => {
       console.error('register error', err)
@@ -151,7 +163,7 @@ function submitRegister() {
 function toggleMode() {
   isLogin.value = !isLogin.value
   // 重置验证码与表单验证状态
-  refreshCaptcha()
+  changeCaptcha()
   loginFormRef.value?.clearValidate?.()
   registerFormRef.value?.clearValidate?.()
 }
@@ -193,9 +205,10 @@ function toggleMode() {
                 <el-input v-model="loginForm.captcha" autocomplete="off" />
               </el-col>
               <el-col :span="8" class="captcha-col">
-                <div class="captcha-box" @click="refreshCaptcha" role="button" tabindex="0">
+                <!-- <div class="captcha-box" @click="refreshCaptcha" role="button" tabindex="0">
                   {{ captcha }}
-                </div>
+                </div> -->
+                <img style="width: 80px;" :src="captcha" alt="" @click="changeCaptcha()"></img>
                 <!-- <el-button type="text" @click="refreshCaptcha">刷新</el-button> -->
               </el-col>
             </el-row>
@@ -233,11 +246,11 @@ function toggleMode() {
             <el-input v-model="registerForm.confirm" type="password" />
           </el-form-item>
 
-          <el-form-item label="性别" prop="gender">
+          <el-form-item label="性别" prop="sex">
             <el-radio-group v-model="registerForm.sex">
-              <el-radio label="0">男</el-radio>
-              <el-radio label="1">女</el-radio>
-              <el-radio label="2">保密</el-radio>
+              <el-radio :label="0">男</el-radio>
+              <el-radio :label="1">女</el-radio>
+              <el-radio :label="2">保密</el-radio>
             </el-radio-group>
           </el-form-item>
 

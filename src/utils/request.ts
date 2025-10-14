@@ -1,5 +1,5 @@
 import axios from 'axios';
-// import {getToken} from './auth';
+import {getToken} from './auth';
 import {tansParams} from './reqestUtils';
 import errorCode from './errorCode';
 import { ElMessage, ElMessageBox, ElNotification } from 'element-plus';
@@ -13,19 +13,18 @@ declare module 'axios' {
     }
 }
 
-// axios.defaults.baseURL = "http://localhost:8080"
-// axios.defaults.timeout = 10000;
+
 
 // const requestStore = useRequestStore()
 
 
-// let captcha:any;
+let captcha:any;
 
 
 let isRelogin = {show:false}
 
 const service = axios.create({
-    baseURL:"http://localhost:8083",
+    baseURL:"http://localhost:8083/web",
     timeout:10000
 })
 
@@ -37,17 +36,18 @@ axios.defaults.headers['Access-Control-Allow-Origin'] = "*"
 
 // 配置请求拦截器
 service.interceptors.request.use(config=>{
-    // const isToken = (config.headers || {}).isToken === false
+    const isToken = (config.headers || {}).isToken === false
     
     if (config["isCaptcha"]) {
         config.responseType = "blob"
     }
 
-    // if (getToken() && !isToken) {
-    //     config.headers['Authorization'] = getToken()
-    // }else{
-    //     config.headers["captcha"] = captcha
-    // }
+    if (getToken() && !isToken) {
+        config.headers['Authorization'] = getToken()
+    }else{
+
+        // config.headers["captcha"] = captcha
+    }
     // console.log(config.headers['Authorization']);
     if (config.method === 'get' && config.params) {
         let url = config.url + "?" + tansParams(config.params)
@@ -103,17 +103,26 @@ service.interceptors.request.use(config=>{
 service.interceptors.response.use(res=>{
 
     // TODO:验证码，须进行校验排查
-    // if (typeof res.headers.get === 'function') {
-    //     // 现在 TypeScript 知道这是可调用的
-    //     if (res.headers.get("Captcha")) {
-    //         captcha = res.headers.get("Captcha")
-    //     }
-    // }
-
+    if (typeof res.headers.get === 'function') {
+        // 现在 TypeScript 知道这是可调用的
+        if (res.headers.get("Captcha")) {
+            captcha = res.headers.get("Captcha")
+        }
+    }
 
     const code = res.data.code || 200
     const codeKey = String(res.data.code) as keyof typeof errorCode;
     const msg = errorCode[codeKey] || res.data.msg || errorCode["default"]
+    //二进制数据直接返回
+    // Blob 是一个术语，用于描述一种数据类型，通常用于存储大块的二进制数据
+    // ArrayBuffer 是一个用于表示通用、固定长度的原始二进制数据缓冲区的对象。它是一个字节数组
+    // if (res.request.responseType === 'blob' || res.request.responseType === 'arraybuffer'){
+    //     return res.data
+    // }
+
+    
+
+    
     if (code === 401) {
         if (!isRelogin.show) {
             isRelogin.show = true;

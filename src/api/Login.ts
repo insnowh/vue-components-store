@@ -20,7 +20,10 @@ function login(loginForm: LoginForm) {
     return request({
         url: '/login',
         method: 'post',
-        data: loginForm
+        data: loginForm,
+        headers:{
+            isToken : false
+        }
     });
 }
 
@@ -32,5 +35,16 @@ function register(registerForm: RegisterForm) {
     });
 }
 
+function getCaptcha() {
+    return request({
+        url:`/captcha?${Math.random()}`,
+        method:"get",
+        headers:{
+            isToken : false
+        },
+        isCaptcha:true
+    })
+}
 
-export { login , register };
+
+export { login , register , getCaptcha };
