@@ -157,7 +157,8 @@ service.interceptors.response.use(res=>{
         ElNotification.error({ title: msg })
         return Promise.reject('error')
     } else {
-        return res
+        
+        return res.data
     }
 },error=>{
     let {message} = error
