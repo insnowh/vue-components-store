@@ -54,6 +54,9 @@ service.interceptors.request.use(config=>{
         url = url.slice(0,-1)
         config.params = {}
         config.url = url
+
+        console.log(url);
+        
     }
     if (config.method === 'post' || config.method === 'put') {
         const requestObj = {
