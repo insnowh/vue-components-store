@@ -4,10 +4,10 @@ type FormData = {
   username: string
   email: string
   password: string
-  sex: 0 | 1 | 2 | null
+  sex: number | null
   phone: string
-  status: 0 | 1 | null
-  permission: 0 | 1 | 2 | null
+  status: number | null
+  permission: number | null
   pageSize: number
   pageNum: number
 }

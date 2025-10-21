@@ -17,7 +17,10 @@ type FormData = {
   pageNum: number
 }
 
-const userList = ref([]);
+const userList = ref({
+  data: [] as Array<FormData>,
+  total: 0
+});
 
 const currentPage = ref(1);
 
@@ -51,8 +54,7 @@ function getUserListData() {
   getUserList(formData.value).then((res) => {
     console.log(res);
     
-      userList.value = res.data;
-      console.log(userList.value);
+      userList.value = res;
    });
 }
 
@@ -62,20 +64,32 @@ function handleClick() {
 
 const handleSizeChange = (val: number) => {
   console.log(`${val} items per page`)
+  pageSize.value = val;
+  getUserListData()
 }
 const handleCurrentChange = (val: number) => {
   console.log(`current page: ${val}`)
+  currentPage.value = val;
+  getUserListData()
 }
 
 </script>
 
 <template>
   <div>
-    <el-table :data="userList" style="width: 100%" table-layout="fixed">
+    <el-table
+      :data="userList.data"
+      style="width: 100%"
+      table-layout="fixed"
+      :header-cell-style="{ textAlign: 'center' }"
+      :cell-style="{ textAlign: 'center' }"
+      show-overflow-tooltip
+    >
+      <el-table-column type="selection" width="55" />
       <el-table-column fixed prop="username" label="用户名" />
       <el-table-column prop="password" label="密码" />
       <el-table-column prop="sex" label="性别" />
-      <el-table-column prop="email" label="邮箱" />
+      <el-table-column prop="email" label="邮箱" width="170"/>
       <el-table-column prop="phone" label="电话" />
       <el-table-column prop="status" label="账户状态" />
       <el-table-column prop="permission" label="用户权限" />
@@ -99,7 +113,7 @@ const handleCurrentChange = (val: number) => {
       :disabled="disabled"
       :background="background"
       layout="total, sizes, prev, pager, next, jumper"
-      :total="400"
+      :total="userList.total"
       @size-change="handleSizeChange"
       @current-change="handleCurrentChange"
     />
@@ -109,5 +123,11 @@ const handleCurrentChange = (val: number) => {
 </template>
 
 <style scoped>
-
+.example-pagination-block {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center; /* 居中分页 */
+  align-items: center;
+  width: 100%;
+}
 </style>
