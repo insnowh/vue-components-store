@@ -87,21 +87,13 @@ const registerRules = {
   ]
 }
 
-/* 简单验证码示例（前端演示用） */
-// const captcha = ref(generateCaptcha())
-// function generateCaptcha() {
-//   return Math.random().toString(36).slice(2, 6).toUpperCase()
-// }
-// function refreshCaptcha() {
-//   captcha.value = generateCaptcha()
-// }
 
 const captcha = ref("")
 
 function changeCaptcha() {
   getCaptcha().then((res:any)=>{
-    // console.log(res);
-    captcha.value = window.URL.createObjectURL(new Blob([res.data],{type:'image/png'}))
+    
+    captcha.value = window.URL.createObjectURL(new Blob([res],{type:'image/png'}))
     
   })
 }
@@ -121,8 +113,8 @@ function submitLogin() {
       console.log('login response', res)
       // 处理登录成功逻辑，如存储token，跳转页面等
       ElMessage.success('登录成功')
-      console.log('login payload', { ...loginForm })
-      setToken(res.data.token)
+      // console.log('login payload', { ...loginForm })
+      setToken(res.data)
       router.push('/index')
     }).catch(err => {
       console.error('login error', err)

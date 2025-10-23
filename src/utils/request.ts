@@ -39,6 +39,8 @@ service.interceptors.request.use(config=>{
     const isToken = (config.headers || {}).isToken === false
     
     if (config["isCaptcha"]) {
+        console.log("配置responseType");
+        
         config.responseType = "blob"
     }
 
@@ -46,7 +48,7 @@ service.interceptors.request.use(config=>{
         config.headers['Authorization'] = getToken()
     }else{
 
-        // config.headers["captcha"] = captcha
+        config.headers["captcha"] = captcha
     }
     // console.log(config.headers['Authorization']);
     if (config.method === 'get' && config.params) {
