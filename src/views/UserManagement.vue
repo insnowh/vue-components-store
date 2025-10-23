@@ -35,7 +35,6 @@ type searchFormData = {
   permission: 0 | 1 | 2 | null
   pageSize: number
   pageNum: number
-  registerRange?: [string, string] | null
   registerStart?: string | null
   registerEnd?: string | null
 }
@@ -62,6 +61,7 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 
 const size = ref<ComponentSize>('default')
+const registerRange = ref<[string, string] | null>(null);
 
 const background = ref(false)
 const disabled = ref(false)
@@ -76,7 +76,6 @@ const searchForm = ref<searchFormData>({
   permission: null,
   pageNum: currentPage.value,
   pageSize: pageSize.value,
-  registerRange: null,
   registerStart: null,
   registerEnd: null
 })
@@ -92,15 +91,15 @@ function getUserListData() {
 
   // 构造请求参数：如果有 registerRange 则拆成 registerStart / registerEnd
   const payload: any = { ...searchForm.value }
-  if (searchForm.value.registerRange && searchForm.value.registerRange.length === 2) {
-    payload.registerStart = searchForm.value.registerRange[0]
-    payload.registerEnd = searchForm.value.registerRange[1]
+  if (registerRange.value && registerRange.value.length === 2) {
+    payload.registerStart = registerRange.value[0]
+    payload.registerEnd = registerRange.value[1]
   } else {
     payload.registerStart = null
     payload.registerEnd = null
   }
   // 不向后端传递 registerRange 数组（如后端需要可保留）
-  delete payload.registerRange
+  // delete payload.registerRange
 
   getUserList(payload).then((res) => {
     console.log(res);
@@ -148,13 +147,24 @@ function handleReset() {
     permission: null,
     pageNum: currentPage.value,
     pageSize: pageSize.value,
-    registerRange: null,
     registerStart: null,
     registerEnd: null
   }
+  registerRange.value = null
   currentPage.value = 1
+  
+  
   getUserListData()
 }
+
+const defaultTime: [Date, Date] = [
+  new Date(2000, 1, 1, 12, 0, 0),
+  new Date(2000, 2, 1, 8, 0, 0),
+]
+
+function log() {
+  console.log(registerRange.value);
+} 
 
 </script>
 
@@ -164,13 +174,13 @@ function handleReset() {
     <el-row :gutter="12" style="margin-bottom:12px;">
       <el-col :span="6">
         <el-form-item label="用户名">
-          <el-input v-model="searchForm.username" />
+          <el-input v-model="searchForm.username" placeholder="请输入用户名" />
         </el-form-item>
       </el-col>
 
       <el-col :span="6">
         <el-form-item label="性别">
-          <el-select v-model="searchForm.sex"  placeholder="性别" style="width: 200px" clearable>
+          <el-select v-model="searchForm.sex"  placeholder="请选择性别" style="width: 200px" clearable>
             <el-option label="男" :value="0" />
             <el-option label="女" :value="1" />
             <el-option label="保密" :value="2" />
@@ -180,19 +190,19 @@ function handleReset() {
 
       <el-col :span="6">
         <el-form-item label="邮箱">
-          <el-input v-model="searchForm.email" />
+          <el-input v-model="searchForm.email" placeholder="请输入邮箱"/>
         </el-form-item>
       </el-col>
 
       <el-col :span="6">
         <el-form-item label="电话">
-          <el-input v-model="searchForm.phone" />
+          <el-input v-model="searchForm.phone" placeholder="请输入电话"/>
         </el-form-item>
       </el-col>
 
       <el-col :span="6">
         <el-form-item label="用户状态">
-          <el-select v-model="searchForm.status" placeholder="用户状态" style="width: 200px" clearable>
+          <el-select v-model="searchForm.status" placeholder="请选择用户状态" style="width: 200px" clearable>
             <el-option label="正常" :value="0" />
             <el-option label="锁定" :value="1" />
           </el-select>
@@ -201,7 +211,7 @@ function handleReset() {
 
       <el-col :span="6">
         <el-form-item label="用户权限">
-          <el-select v-model="searchForm.permission" placeholder="用户权限" style="width: 200px" clearable>
+          <el-select v-model="searchForm.permission" placeholder="请选择用户权限" style="width: 200px" clearable>
             <el-option label="管理" :value="0" />
             <el-option label="员工" :value="1" />
             <el-option label="用户" :value="2" />
@@ -211,7 +221,7 @@ function handleReset() {
 
       <el-col :span="8">
         <el-form-item label="注册日期">
-          <el-date-picker
+          <!-- <el-date-picker
             v-model="searchForm.registerRange"
             type="daterange"
             start-placeholder="开始日期"
@@ -219,12 +229,21 @@ function handleReset() {
             value-format="yyyy-MM-dd"
             unlink-panels
             style="width:100%"
+          /> -->
+          <el-date-picker
+            v-model="registerRange"
+            type="datetimerange"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            :default-time="defaultTime"
           />
         </el-form-item>
       </el-col>
-      <el-col :span="4" >
+      <el-col :span="6" >
         <el-button type="primary" @click="handleSearch">搜索</el-button>
         <el-button @click="handleReset">重置</el-button>
+        <el-button @click="log()">打印</el-button>
       </el-col>
 
       

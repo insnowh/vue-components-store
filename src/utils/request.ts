@@ -57,7 +57,7 @@ service.interceptors.request.use(config=>{
         config.params = {}
         config.url = url
 
-        console.log(url);
+        // console.log(url);
         
     }
     if (config.method === 'post' || config.method === 'put') {
