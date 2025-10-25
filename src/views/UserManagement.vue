@@ -1,5 +1,5 @@
 <script lang='ts' setup>
-import { getUserList } from "../api/UserManagement";
+import { getUserList, addUser, updateUser, selectUserById, deleteUserById, deleteUserByIds } from "../api/UserManagement";
 import { onMounted, ref } from "vue";
 import type { ComponentSize } from 'element-plus'
 
@@ -13,7 +13,10 @@ import {
   ElDatePicker,
   ElButton,
   ElRow,
-  ElCol
+  ElCol,
+  ElDialog,
+  ElMessageBox,
+  ElMessage
 } from 'element-plus'
 import 'element-plus/es/components/form/style/css'
 import 'element-plus/es/components/form-item/style/css'
@@ -40,6 +43,7 @@ type searchFormData = {
 }
 
 type FormData = {
+  id: number | null
   username: string
   email: string
   password: string
@@ -47,6 +51,19 @@ type FormData = {
   phone: string
   status: 0 | 1 | null
   permission: 0 | 1 | 2 | null
+  registerDate: '' | string
+}
+
+type editFormData = {
+  id: number | null
+  username: string
+  email: string
+  password: string
+  sex: 0 | 1 | 2 | null
+  phone: string
+  status: 0 | 1 | null
+  permission: 0 | 1 | 2 | null
+  registerDate: '' | string
 }
 
 const userList = ref({
@@ -65,6 +82,131 @@ const registerRange = ref<[string, string] | null>(null);
 
 const background = ref(false)
 const disabled = ref(false)
+
+const dialogVisible = ref(false);
+
+const isEditing = ref(true);
+
+const editingIndex = ref<number | null>(null)
+
+/* 新增：打开新增对话框 */
+function openAdd() {
+  isEditing.value = false
+  editingIndex.value = null
+
+  Object.assign(editForm, {
+    username: '',
+    email: '',
+    password: '',
+    sex: 2,
+    phone: '',
+    status: 0,
+    permission: 2,
+    registerDate: ''
+  })
+  dialogVisible.value = true
+}
+
+
+/* 修改：点击表格行的修改按钮时打开编辑对话框并填充数据 */
+function openEdit(id: number) {
+  selectUserById(id as number).then((res) => {
+    console.log(res);
+    editForm.value = res.data;
+  });
+  isEditing.value = true
+  // editingIndex.value = index
+  dialogVisible.value = true
+}
+
+function deleteUser(id: number){
+  ElMessageBox.confirm('确定要删除该用户吗？', '确认', {
+    type: 'warning'
+  }).then(() => {
+    deleteUserById(id).then((res) => {
+      console.log(res);
+      ElMessage.success('删除成功')
+      getUserListData();
+    });
+  }).catch(() => {
+    // 取消
+  })
+}
+
+
+/* 新增/保存处理（前端示例：直接修改本地列表；实际应调用后端接口） */
+function saveUser() {
+  editFormRef.value?.validate(async (valid: boolean) => {
+    if (!valid) return
+    if (isEditing.value && editingIndex.value !== null) {
+      // 更新本地数据
+      // userList.value.data[editingIndex.value] = { ...editForm }
+      updateUser(editForm.value).then((res) => {
+        console.log(res);
+      });
+      ElMessage.success('修改成功')
+    } else {
+      // 新增到列表头部
+      addUser(editForm.value).then((res) => {
+        console.log(res);
+      });
+      // userList.value.data.unshift({ ...editForm })
+      // userList.value.total = (userList.value.total || 0) + 1
+      ElMessage.success('新增成功')
+    }
+    dialogVisible.value = false
+  })
+}
+
+const multipleSelectionByIds = ref<number[]>([])
+
+/* 批量删除（示例：前端删除，真实场景应调用后端接口） */
+function batchDelete() {
+
+  multipleSelectionByIds.value = multipleSelection.value.map(item => item.id as number)
+
+  console.log(multipleSelectionByIds.value);
+  
+  if (!multipleSelection.value.length) {
+    ElMessage.warning('请选择要删除的用户')
+    return
+  }
+  ElMessageBox.confirm('确定要删除选中的用户吗？', '确认', {
+    type: 'warning'
+  }).then(() => {
+    // const toDelete = new Set(multipleSelection.value)
+    // userList.value.data = userList.value.data.filter(item => !toDelete.has(item))
+    // multipleSelection.value = []
+    deleteUserByIds(multipleSelectionByIds.value as unknown as number).then((res) => {
+      console.log(res);
+      getUserListData();
+    });
+    ElMessage.success('删除成功')
+  }).catch(() => {
+    // 取消
+  })
+}
+
+
+const editFormRef = ref()
+const editForm = ref<editFormData>({
+  id: null,
+  username: '',
+  email: '',
+  password: '',
+  sex: 2,
+  phone: '',
+  status: 0,
+  permission: 2,
+  registerDate: ''
+})
+
+const editRules = {
+  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  email: [{ type: 'email', required: true, message: '请输入正确邮箱', trigger: 'blur' }],
+  phone: [{ required: true, message: '请输入电话', trigger: 'blur' }]
+}
 
 const searchForm = ref<searchFormData>({
   username: "",
@@ -105,10 +247,6 @@ function getUserListData() {
     console.log(res);
     userList.value = res;
   });
-}
-
-function handleClick() {
-  
 }
 
 const handleSizeChange = (val: number) => {
@@ -153,7 +291,6 @@ function handleReset() {
   registerRange.value = null
   currentPage.value = 1
   
-  
   getUserListData()
 }
 
@@ -163,7 +300,7 @@ const defaultTime: [Date, Date] = [
 ]
 
 function log() {
-  console.log(registerRange.value);
+  console.log(editForm.value);
 } 
 
 </script>
@@ -250,7 +387,12 @@ function log() {
       
     </el-row>
   </el-form>
-  
+
+  <!-- 操作按钮：新增 与 批量删除 -->
+  <div style="margin-bottom:12px; display:flex; gap:8px;">
+    <el-button type="primary" @click="openAdd">新增</el-button>
+    <el-button type="danger" @click="batchDelete">批量删除</el-button>
+  </div>
 
   <div>
     <el-table
@@ -287,13 +429,13 @@ function log() {
           <span v-if="scope.row.permission === 2">用户</span>
         </template>
       </el-table-column>
-      <el-table-column prop="registerTime" label="注册日期" />
+      <el-table-column prop="registerDate" label="注册日期" />
       <el-table-column fixed="right" label="Operations" >
-        <template #default>
-          <el-button link type="primary" size="small" @click="handleClick">
-            Detail
+        <template #default="scope">
+          <el-button link type="primary" size="small" @click="openEdit(scope.row.id)">
+            修改
           </el-button>
-          <el-button link type="primary" size="small">Edit</el-button>
+          <el-button link type="primary" size="small" @click="deleteUser(scope.row.id)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -313,7 +455,58 @@ function log() {
     />
     </div>
   </div>
-    
+
+  <!-- 新增/编辑对话框 -->
+  <el-dialog :title="isEditing ? '修改用户' : '新增用户'" v-model="dialogVisible" width="520px">
+    <el-form :model="editForm" :rules="editRules" ref="editFormRef" label-width="100px" label-position="left">
+      <el-form-item label="用户名" prop="username">
+        <el-input v-model="editForm.username" />
+      </el-form-item>
+      <el-form-item label="密码" prop="password">
+        <el-input v-model="editForm.password" />
+      </el-form-item>
+      <el-form-item label="性别" prop="sex">
+        <el-select v-model="editForm.sex">
+          <el-option label="男" :value="0" />
+          <el-option label="女" :value="1" />
+          <el-option label="保密" :value="2" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="邮箱" prop="email">
+        <el-input v-model="editForm.email" />
+      </el-form-item>
+      <el-form-item label="电话" prop="phone">
+        <el-input v-model="editForm.phone" />
+      </el-form-item>
+      <el-form-item label="用户状态" prop="status">
+        <el-select v-model="editForm.status">
+          <el-option label="正常" :value="0" />
+          <el-option label="锁定" :value="1" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="用户权限" prop="permission">
+        <el-select v-model="editForm.permission">
+          <el-option label="管理" :value="0" />
+          <el-option label="员工" :value="1" />
+          <el-option label="用户" :value="2" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="注册日期" prop="registerDate">
+        <el-date-picker 
+          v-model="editForm.registerDate" 
+          type="datetime" 
+          value-format="yyyy-MM-DD HH:mm:ss" />
+          
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="dialogVisible = false">取消</el-button>
+      <el-button type="primary" @click="saveUser">保存</el-button>
+    </template>
+  </el-dialog>
+
+
+
 </template>
 
 <style scoped>
