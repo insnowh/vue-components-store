@@ -1,7 +1,7 @@
 <script lang='ts' setup>
 import { getUserList, addUser, updateUser, selectUserById, deleteUserById, deleteUserByIds } from "../api/UserManagement";
-import { onMounted, ref } from "vue";
-import type { ComponentSize } from 'element-plus'
+import { onMounted, reactive, ref } from "vue";
+import type { ComponentSize, FormRules } from 'element-plus'
 
 /* 新增：引入 Element Plus 表单/输入/选择/日期等组件（按需引入样式） */
 import {
@@ -91,10 +91,7 @@ const editingIndex = ref<number | null>(null)
 
 /* 新增：打开新增对话框 */
 function openAdd() {
-  isEditing.value = false
-  editingIndex.value = null
-
-  Object.assign(editForm, {
+  editForm.value = Object.assign(editForm.value, {
     username: '',
     email: '',
     password: '',
@@ -104,6 +101,10 @@ function openAdd() {
     permission: 2,
     registerDate: ''
   })
+  isEditing.value = false
+  editingIndex.value = null
+
+  
   dialogVisible.value = true
 }
 
@@ -188,6 +189,7 @@ function batchDelete() {
 }
 
 
+
 const editFormRef = ref()
 const editForm = ref<editFormData>({
   id: null,
@@ -201,12 +203,12 @@ const editForm = ref<editFormData>({
   registerDate: ''
 })
 
-const editRules = {
+const editRules = reactive<FormRules<editFormData>>({
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
   email: [{ type: 'email', required: true, message: '请输入正确邮箱', trigger: 'blur' }],
   phone: [{ required: true, message: '请输入电话', trigger: 'blur' }]
-}
+})
 
 const searchForm = ref<searchFormData>({
   username: "",
@@ -377,10 +379,10 @@ function log() {
           />
         </el-form-item>
       </el-col>
-      <el-col :span="6" >
+      <el-col :span="6" style="margin-left: 2vw;gap:8px;" >
         <el-button type="primary" @click="handleSearch">搜索</el-button>
         <el-button @click="handleReset">重置</el-button>
-        <el-button @click="log()">打印</el-button>
+        <!-- <el-button @click="log()">打印</el-button> -->
       </el-col>
 
       
@@ -389,7 +391,7 @@ function log() {
   </el-form>
 
   <!-- 操作按钮：新增 与 批量删除 -->
-  <div style="margin-bottom:12px; display:flex; gap:8px;">
+  <div style="margin-bottom:12px; display:flex; gap:8px;padding-left: 2vw;">
     <el-button type="primary" @click="openAdd">新增</el-button>
     <el-button type="danger" @click="batchDelete">批量删除</el-button>
   </div>

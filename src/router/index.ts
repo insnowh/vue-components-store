@@ -28,6 +28,11 @@ const router = createRouter({
           path: '/chat',
           name: 'chat',
           component:  () => import('../views/Chat.vue'),
+        },
+        {
+          path: '/dictManagement',
+          name: 'DictManagement',
+          component:  () => import('../views/DictManagement.vue'),
         }
       ]
     },

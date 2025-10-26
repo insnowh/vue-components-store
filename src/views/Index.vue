@@ -38,7 +38,7 @@ const handleClose = (key: string, keyPath: string[]) => {
                     <el-menu-item index="1-4-1">item one</el-menu-item>
                 </el-sub-menu>
             </el-sub-menu>
-            <el-menu-item index="1-4-1">item one</el-menu-item>
+            <el-menu-item index="dictManagement">字典管理</el-menu-item>
             </el-menu>
         </el-aside>
 

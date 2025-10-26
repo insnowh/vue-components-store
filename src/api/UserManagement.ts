@@ -41,7 +41,7 @@ function addUser(userForm:editFormData) {
     });
 }
 
-function updateUser(userForm:FormData) {
+function updateUser(userForm:editFormData) {
     return request({
         url: 'user/updateUser',
         data: userForm,
