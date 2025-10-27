@@ -25,10 +25,10 @@ type editFormData = {
   registerDate: '' | string
 }
 
-function getUserList(loginForm:searchFormData) {
+function getUserList(searchFormData:searchFormData) {
     return request({
         url: 'user/getUserList',
-        params: loginForm,
+        params: searchFormData,
         method: 'get'
     });
 }
