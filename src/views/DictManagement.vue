@@ -42,7 +42,8 @@ type searchFormData = {
     pageNum: number | null,
 }
 
-type FormData = {
+type DictTyprData = {
+    id: number | null,
     dictName: string | null,
     dictType: string | null,
     status: number | null,
@@ -50,7 +51,23 @@ type FormData = {
     createTime: string | null,
     updateBy: string | null,
     updateTime: string | null,
+    remark: string | null,
+    dictDataList?: Array<DictData>
     
+}
+
+type DictData = {
+        dictDataId: number | null,
+        dictDataSort: number | null,
+        dictDataLabel: string | null,
+        dictDataValue: string | null,
+        isDefault: string | null,
+        dictDataStatus: number | null,
+        dictDataCreateBy: string | null,
+        dictDataCreateTime: string | null,
+        dictDataUpdateBy: string | null,
+        dictDataUpdateTime: string | null,
+        dictDataRemark: string | null,
 }
 
 const searchForm = ref<searchFormData>({
@@ -75,8 +92,8 @@ const createRange = ref<[string, string] | null>(null);
 
 const updateRange = ref<[string, string] | null>(null);
 
-const dictList = ref({
-  data: [] as Array<FormData>,
+const dictTableList = ref({
+  data: [] as Array<DictTyprData>,
   total: 0
 });
 
@@ -101,12 +118,11 @@ function getDictListData() {
     payload.updateStartTime = null
     payload.updateEndTime = null
   }
-  // 不向后端传递 registerRange 数组（如后端需要可保留）
-  // delete payload.registerRange
-
+  
   getDictList(payload).then((res) => {
     console.log(res);
-    dictList.value = res;
+    dictTableList.value = res;
+    console.log(dictTableList.value);
   });
 }
 
@@ -116,13 +132,21 @@ onMounted(async () => {
 })
 
 type editFormData = {
-    
+    id: number | null,
+    dictName: string | null,
+    dictType: string | null,
+    status: number | null,
+    createBy: string | null,
+    createTime: string | null,
+    updateBy: string | null,
+    updateTime: string | null,
+    remark: string | null,
+    dictDataList?: Array<DictData>
 }
 
 
 
 const multipleSelection = ref<FormData[]>([])
-
 
 const size = ref<ComponentSize>('default')
 
@@ -155,7 +179,6 @@ function openEdit(id: number) {
     editForm.value = res.data;
   });
   isEditing.value = true
-  // editingIndex.value = index
   dialogVisible.value = true
 }
 
@@ -166,7 +189,7 @@ function deleteUser(id: number){
     deleteDictById(id).then((res) => {
       console.log(res);
       ElMessage.success('删除成功')
-      getUserListData();
+      getDictListData();
     });
   }).catch(() => {
     // 取消
@@ -180,7 +203,6 @@ function saveUser() {
     if (!valid) return
     if (isEditing.value && editingIndex.value !== null) {
       // 更新本地数据
-      // userList.value.data[editingIndex.value] = { ...editForm }
       updateDict(editForm.value).then((res) => {
         console.log(res);
       });
@@ -190,8 +212,6 @@ function saveUser() {
       addDict(editForm.value).then((res) => {
         console.log(res);
       });
-      // userList.value.data.unshift({ ...editForm })
-      // userList.value.total = (userList.value.total || 0) + 1
       ElMessage.success('新增成功')
     }
     dialogVisible.value = false
@@ -214,12 +234,9 @@ function batchDelete() {
   ElMessageBox.confirm('确定要删除选中的用户吗？', '确认', {
     type: 'warning'
   }).then(() => {
-    // const toDelete = new Set(multipleSelection.value)
-    // userList.value.data = userList.value.data.filter(item => !toDelete.has(item))
-    // multipleSelection.value = []
     deleteDictByIds(multipleSelectionByIds.value as unknown as number).then((res) => {
       console.log(res);
-      getUserListData();
+      getDictListData();
     });
     ElMessage.success('删除成功')
   }).catch(() => {
@@ -232,21 +249,34 @@ function batchDelete() {
 const editFormRef = ref()
 const editForm = ref<editFormData>({
   id: null,
-  username: '',
-  email: '',
-  password: '',
-  sex: 2,
-  phone: '',
+  dictName: '',
+  dictType: '',
   status: 0,
-  permission: 2,
-  registerDate: ''
+  createBy: '',
+  createTime: '',
+  updateBy: '',
+  updateTime: '',
+  remark: '',
+  dictDataList: [{
+    dictDataId: null,
+    dictDataSort: null,
+    dictDataLabel: '',
+    dictDataValue: '',
+    isDefault: 'N',
+    dictDataStatus: 0,
+    dictDataCreateBy: '',
+    dictDataCreateTime: '',
+    dictDataUpdateBy: '',
+    dictDataUpdateTime: '',
+    dictDataRemark: '',
+  }]
 })
 
 const editRules = reactive<FormRules<editFormData>>({
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
-  email: [{ type: 'email', required: true, message: '请输入正确邮箱', trigger: 'blur' }],
-  phone: [{ required: true, message: '请输入电话', trigger: 'blur' }]
+  // username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  // password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  // email: [{ type: 'email', required: true, message: '请输入正确邮箱', trigger: 'blur' }],
+  // phone: [{ required: true, message: '请输入电话', trigger: 'blur' }]
 })
 
 
@@ -255,12 +285,13 @@ const editRules = reactive<FormRules<editFormData>>({
 const handleSizeChange = (val: number) => {
   console.log(`${val} items per page`)
   pageSize.value = val;
-  getUserListData()
+  getDictListData()
 }
+
 const handleCurrentChange = (val: number) => {
   console.log(`current page: ${val}`)
   currentPage.value = val;
-  getUserListData()
+  getDictListData()
 }
 
 const handleSelectionChange = (val: FormData[]) => {
@@ -274,27 +305,28 @@ const handleSelectionChange = (val: FormData[]) => {
 function handleSearch() {
   // 搜索时从第一页开始
   currentPage.value = 1
-  getUserListData()
+  getDictListData()
 }
 
 function handleReset() {
   searchForm.value = {
-    username: "",
-    email: "",
-    password: "",
-    sex: null,
-    phone: "",
+    dictName: null,
+    dictType: null,
     status: null,
-    permission: null,
-    pageNum: currentPage.value,
-    pageSize: pageSize.value,
-    registerStart: null,
-    registerEnd: null
+    createBy: null,
+    createStartTime: null,
+    createEndTime: null,
+    updateBy: null,
+    updateStartTime: null,
+    updateEndTime: null,
+    pageNum: null,
+    pageSize: null
   }
-  registerRange.value = null
+  createRange.value = null
+  updateRange.value = null
   currentPage.value = 1
   
-  getUserListData()
+  getDictListData()
 }
 
 const defaultTime: [Date, Date] = [
@@ -311,229 +343,86 @@ function log() {
 const parentBorder = ref(false)
 const childBorder = ref(false)
 const preserveExpanded = ref(false)
-const tableData = [
-  {
-    date: '2016-05-03',
-    name: 'Tom',
-    state: 'California',
-    city: 'San Francisco',
-    address: '3650 21st St, San Francisco',
-    zip: 'CA 94114',
-    family: [
-      {
-        name: 'Jerry',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-      {
-        name: 'Spike',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-      {
-        name: 'Tyke',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-    ],
-  },
-  {
-    date: '2016-05-02',
-    name: 'Tom',
-    state: 'California',
-    city: 'San Francisco',
-    address: '3650 21st St, San Francisco',
-    zip: 'CA 94114',
-    family: [
-      {
-        name: 'Jerry',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-      {
-        name: 'Spike',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-      {
-        name: 'Tyke',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-    ],
-  },
-  {
-    date: '2016-05-04',
-    name: 'Tom',
-    state: 'California',
-    city: 'San Francisco',
-    address: '3650 21st St, San Francisco',
-    zip: 'CA 94114',
-    family: [
-      {
-        name: 'Jerry',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-      {
-        name: 'Spike',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-      {
-        name: 'Tyke',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-    ],
-  },
-  {
-    date: '2016-05-01',
-    name: 'Tom',
-    state: 'California',
-    city: 'San Francisco',
-    address: '3650 21st St, San Francisco',
-    zip: 'CA 94114',
-    family: [
-      {
-        name: 'Jerry',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-      {
-        name: 'Spike',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-      {
-        name: 'Tyke',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-    ],
-  },
-  {
-    date: '2016-05-08',
-    name: 'Tom',
-    state: 'California',
-    city: 'San Francisco',
-    address: '3650 21st St, San Francisco',
-    zip: 'CA 94114',
-    family: [
-      {
-        name: 'Jerry',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-      {
-        name: 'Spike',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-      {
-        name: 'Tyke',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-    ],
-  },
-  {
-    date: '2016-05-06',
-    name: 'Tom',
-    state: 'California',
-    city: 'San Francisco',
-    address: '3650 21st St, San Francisco',
-    zip: 'CA 94114',
-    family: [
-      {
-        name: 'Jerry',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-      {
-        name: 'Spike',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-      {
-        name: 'Tyke',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-    ],
-  },
-  {
-    date: '2016-05-07',
-    name: 'Tom',
-    state: 'California',
-    city: 'San Francisco',
-    address: '3650 21st St, San Francisco',
-    zip: 'CA 94114',
-    family: [
-      {
-        name: 'Jerry',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-      {
-        name: 'Spike',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-      {
-        name: 'Tyke',
-        state: 'California',
-        city: 'San Francisco',
-        address: '3650 21st St, San Francisco',
-        zip: 'CA 94114',
-      },
-    ],
-  },
-]
+
+
+const selectable = (row: any) => ![1, 31].includes(row.id)
 
 </script>
 
 <template>
+
+  <el-form :model="searchForm" label-width="90px" class="search-form" inline>
+    <el-row :gutter="12" style="margin-bottom:12px;">
+      <el-col :span="6">
+        <el-form-item label="字典名称">
+          <el-input v-model="searchForm.dictName" placeholder="请输入字典名称" />
+        </el-form-item>
+      </el-col>
+      <el-col :span="6">
+        <el-form-item label="字典类型">
+          <el-input v-model="searchForm.dictType" placeholder="请输入字典类型" />
+        </el-form-item>
+      </el-col>
+
+      <el-col :span="6">
+        <el-form-item label="状态">
+          <el-select v-model="searchForm.status"  placeholder="请选择状态" style="width: 200px" clearable>
+            <el-option label="启用" :value="0" />
+            <el-option label="禁用" :value="1" />
+          </el-select>
+        </el-form-item>
+      </el-col>
+
+      <el-col :span="6">
+        <el-form-item label="创建人">
+          <el-input v-model="searchForm.createBy" placeholder="请输入创建人"/>
+        </el-form-item>
+      </el-col>
+
+      <el-col :span="6">
+        <el-form-item label="修改人">
+          <el-input v-model="searchForm.updateBy" placeholder="请输入修改人"/>
+        </el-form-item>
+      </el-col>
+
+      <el-col :span="9">
+        <el-form-item label="创建时间">
+          <el-date-picker
+            v-model="createRange"
+            type="datetimerange"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            :default-time="defaultTime"
+            style="width: 300px;"
+          />
+        </el-form-item>
+      </el-col>
+
+      <el-col :span="9">
+        <el-form-item label="修改时间">
+          <el-date-picker
+            v-model="updateRange"
+            type="datetimerange"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            :default-time="defaultTime"
+            style="width: 300px;"
+          />
+        </el-form-item>
+      </el-col>
+
+      <el-col :span="6" style="margin-left: 2vw;gap:8px;" >
+        <el-button type="primary" @click="handleSearch">搜索</el-button>
+        <el-button @click="handleReset">重置</el-button>
+        <el-button @click="log()">打印</el-button>
+      </el-col>
+
+      
+      
+    </el-row>
+  </el-form>
     
   <!-- 操作按钮：新增 与 批量删除 -->
   <div style="margin-bottom:12px; display:flex; gap:8px;padding-left: 2vw;">
@@ -544,31 +433,67 @@ const tableData = [
   <div>
 
     <el-table
-    :data="tableData"
-    :border="parentBorder"
-    :preserve-expanded-content="preserveExpanded"
-    style="width: 100%"
-  >
+      :data="dictTableList.data"
+      :border="parentBorder"
+      :preserve-expanded-content="preserveExpanded"
+      :header-cell-style="{ textAlign: 'center' }"
+      :cell-style="{ textAlign: 'center' }"
+      style="width: 100%"
+    >
+    <el-table-column type="selection" width="55" :selectable="selectable" />
     <el-table-column type="expand">
       <template #default="props">
         <div m="4">
-          <p m="t-0 b-2">State: {{ props.row.state }}</p>
-          <p m="t-0 b-2">City: {{ props.row.city }}</p>
-          <p m="t-0 b-2">Address: {{ props.row.address }}</p>
-          <p m="t-0 b-2">Zip: {{ props.row.zip }}</p>
-          <h3>Family</h3>
-          <el-table :data="props.row.family" :border="childBorder">
-            <el-table-column label="Name" prop="name" />
-            <el-table-column label="State" prop="state" />
-            <el-table-column label="City" prop="city" />
-            <el-table-column label="Address" prop="address" />
-            <el-table-column label="Zip" prop="zip" />
+          <h3  @click="console.log(props)" style="padding-left: 20px;">字典详情</h3>
+          <el-table :data="props.row.dictDataList" :border="childBorder" :header-cell-style="{ textAlign: 'center' }" :cell-style="{ textAlign: 'center' }">
+            <el-table-column label="数据标签" prop="dictDataLabel" />
+            <el-table-column label="数据键值" prop="dictDataValue" />
+            <el-table-column label="默认" prop="isDefault" >
+              <template #default="scope">
+                <span v-if="scope.row.isDefault === 'Y'">是</span>
+                <span v-else-if="scope.row.isDefault === 'N'">否</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="数据状态" prop="dictDataStatus" >
+              <template #default="scope">
+                <span v-if="scope.row.dictDataStatus === 0">启用</span>
+                <span v-else-if="scope.row.dictDataStatus === 1">禁用</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="创建者" prop="dictDataCreateBy" />
+            <el-table-column label="创建时间" prop="dictDataCreateTime" />
+            <el-table-column label="修改者" prop="dictDataUpdateBy" />
+            <el-table-column label="修改时间" prop="dictDataUpdateTime" />
+            <el-table-column label="备注" prop="dictDataRemark" />
+            <el-table-column label="操作" prop="dictDataRemark" >
+              <template #default="scope">
+                <el-button type="text" size="small" @click="openEdit(scope.row.id)">编辑</el-button>
+                <el-button type="text" size="small" @click="deleteUser(scope.row.id)">删除</el-button>
+              </template>
+            </el-table-column>
           </el-table>
         </div>
       </template>
     </el-table-column>
-    <el-table-column label="Date" prop="date" />
-    <el-table-column label="Name" prop="name" />
+    <el-table-column label="字典名称" prop="dictName" />
+    <el-table-column label="字典类型" prop="dictType" />
+    <el-table-column label="字典状态" prop="status" >
+      <template #default="scope">
+        <span v-if="scope.row.status === 0">启用</span>
+        <span v-else-if="scope.row.status === 1">禁用</span>
+      </template>
+    </el-table-column>
+    <el-table-column label="创建人" prop="createBy" />
+    <el-table-column label="创建时间" prop="createTime" />
+    <el-table-column label="修改人" prop="updateBy" />
+    <el-table-column label="修改时间" prop="updateTime" />
+    <el-table-column label="备注" prop="remark" />
+    <el-table-column label="操作" >
+      <template #default="scope">
+        <el-button type="text" size="small" @click="openEdit(scope.row.id)">编辑</el-button>
+        <el-button type="text" size="small" @click="deleteUser(scope.row.id)">删除</el-button>
+      </template>
+    </el-table-column>
   </el-table>
     
 
@@ -581,17 +506,88 @@ const tableData = [
       :disabled="disabled"
       :background="background"
       layout="total, sizes, prev, pager, next, jumper"
-      :total="50"
+      :total="dictTableList.total"
       @size-change="handleSizeChange"
       @current-change="handleCurrentChange"
     />
     </div>
   </div>
 
+
+  
+
   <!-- 新增/编辑对话框 -->
-  <el-dialog :title="isEditing ? '修改用户' : '新增用户'" v-model="dialogVisible" width="520px">
+  <el-dialog :title="isEditing ? '修改字典' : '新增字典'" v-model="dialogVisible" width="520px">
     <el-form :model="editForm" :rules="editRules" ref="editFormRef" label-width="100px" label-position="left">
-      
+      <el-form-item label="字典名称" prop="dictName">
+        <el-input v-model="editForm.dictName" placeholder="请输入字典名称" />
+      </el-form-item>
+      <el-form-item label="字典类型" prop="dictType">
+        <el-input v-model="editForm.dictType"  placeholder="请输入字典类型" />
+      </el-form-item>
+      <el-form-item label="字典状态" prop="status">
+        <el-select v-model="editForm.status"  placeholder="请选择字典状态">
+            <el-option label="启用" :value="0" />
+            <el-option label="禁用" :value="1" />
+        </el-select>
+      </el-form-item>
+      <el-form-item v-show="isEditing" label="创建人" prop="createBy">
+        <el-input v-model="editForm.createBy" placeholder="请输入创建人"/>
+      </el-form-item>
+      <el-form-item v-show="isEditing" label="创建时间" prop="createTime" >
+        <el-date-picker 
+            v-model="editForm.createTime" 
+            type="datetime" 
+            value-format="yyyy-MM-DD HH:mm:ss" placeholder="请输入创建时间"/>
+      </el-form-item>
+      <el-form-item v-show="isEditing" label="修改人" prop="updateBy" >
+        <el-input v-model="editForm.updateBy" placeholder="请输入修改人"/>
+      </el-form-item>
+      <el-form-item v-show="isEditing" label="修改时间" prop="updateTime" >
+          <el-date-picker 
+            v-model="editForm.updateTime" 
+            type="datetime" 
+            value-format="yyyy-MM-DD HH:mm:ss" placeholder="请输入修改时间"/>
+      </el-form-item>
+      <el-form-item label="备注" prop="remark" >
+        <el-input v-model="editForm.remark" placeholder="请输入备注"/>
+      </el-form-item>
+
+        <el-table :data="editForm.dictDataList" :header-cell-style="{ textAlign: 'center' }" :cell-style="{ textAlign: 'center' }">
+            <el-table-column label="数据标签" prop="dictDataLabel" >
+              <template #default="scope">
+                <el-input v-model="scope.row.dictDataLabel" placeholder="请输入数据标签"/>
+              </template>
+            </el-table-column>
+            <el-table-column label="数据键值" prop="dictDataValue" >
+              <template #default="scope">
+                <el-input v-model="scope.row.dictDataValue" placeholder="请输入数据键值"/>
+              </template>
+            </el-table-column>
+            <el-table-column label="默认" prop="isDefault" >
+              <template #default="scope">
+                <span v-if="scope.row.isDefault === 'Y'">是</span>
+                <span v-else-if="scope.row.isDefault === 'N'">否</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="数据状态" prop="dictDataStatus" >
+              <template #default="scope">
+                <span v-if="scope.row.dictDataStatus === 0">启用</span>
+                <span v-else-if="scope.row.dictDataStatus === 1">禁用</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="创建者" prop="dictDataCreateBy" />
+            <el-table-column label="创建时间" prop="dictDataCreateTime" />
+            <el-table-column label="修改者" prop="dictDataUpdateBy" />
+            <el-table-column label="修改时间" prop="dictDataUpdateTime" />
+            <el-table-column label="备注" prop="dictDataRemark" />
+            <el-table-column label="操作" prop="dictDataRemark" >
+              <template #default="scope">
+                <el-button type="text" size="small" @click="openEdit(scope.row.id)">编辑</el-button>
+                <el-button type="text" size="small" @click="deleteUser(scope.row.id)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
     </el-form>
     <template #footer>
       <el-button @click="dialogVisible = false">取消</el-button>
