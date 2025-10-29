@@ -4,7 +4,7 @@ type searchFormData = {}
 
 type editFormData = {}
 
-function getDictList(searchFormData:searchFormData) {
+function getDict(searchFormData:searchFormData) {
     return request({
         url: 'dict/getDictList',
         params: searchFormData,
@@ -49,4 +49,5 @@ function deleteDictByIds(id:number) {
     });
 }
 
-export { getDictList, addDict, updateDict, selectDictById, deleteDictById, deleteDictByIds };
+
+export { getDict, addDict, updateDict, selectDictById, deleteDictById, deleteDictByIds };

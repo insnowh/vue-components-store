@@ -1,5 +1,5 @@
 <script lang='ts' setup>
-import { getDictList, addDict, updateDict, selectDictById, deleteDictById, deleteDictByIds } from "../api/DictManagement";
+import { getDict, addDict, updateDict, selectDictById, deleteDictById, deleteDictByIds } from "../api/DictManagement";
 import { onMounted, reactive, ref } from "vue";
 import type { ComponentSize, FormRules } from 'element-plus'
 
@@ -97,7 +97,7 @@ const dictTableList = ref({
   total: 0
 });
 
-function getDictListData() {
+function getDictList() {
   // 同步分页参数
   searchForm.value.pageNum = currentPage.value
   searchForm.value.pageSize = pageSize.value
@@ -119,7 +119,7 @@ function getDictListData() {
     payload.updateEndTime = null
   }
   
-  getDictList(payload).then((res) => {
+  getDict(payload).then((res) => {
     console.log(res);
     dictTableList.value = res;
     console.log(dictTableList.value);
@@ -128,7 +128,7 @@ function getDictListData() {
 
 
 onMounted(async () => {
-    getDictListData()
+    getDictList()
 })
 
 type editFormData = {
@@ -141,16 +141,15 @@ type editFormData = {
     updateBy: string | null,
     updateTime: string | null,
     remark: string | null,
-    dictDataList?: Array<DictData>
+    dictDataList?: Array<DictData> | null
 }
 
 
 
-const multipleSelection = ref<FormData[]>([])
+
 
 const size = ref<ComponentSize>('default')
 
-const background = ref(false)
 const disabled = ref(false)
 
 const dialogVisible = ref(false);
@@ -161,19 +160,27 @@ const editingIndex = ref<number | null>(null)
 
 /* 新增：打开新增对话框 */
 function openAdd() {
-  editForm.value = Object.assign(editForm.value, {
-    
-  })
+  editForm.value = {
+    id: null,
+    dictName: '',
+    dictType: '',
+    status: 0,
+    createBy: '',
+    createTime: '',
+    updateBy: '',
+    updateTime: '',
+    remark: '',
+    dictDataList: []
+  } as editFormData;
   isEditing.value = false
   editingIndex.value = null
-
-  
   dialogVisible.value = true
 }
 
 
 /* 修改：点击表格行的修改按钮时打开编辑对话框并填充数据 */
 function openEdit(id: number) {
+  editForm.value = {} as editFormData;
   selectDictById(id as number).then((res) => {
     console.log(res);
     editForm.value = res.data;
@@ -189,7 +196,7 @@ function deleteUser(id: number){
     deleteDictById(id).then((res) => {
       console.log(res);
       ElMessage.success('删除成功')
-      getDictListData();
+      getDictList();
     });
   }).catch(() => {
     // 取消
@@ -197,8 +204,9 @@ function deleteUser(id: number){
 }
 
 
-/* 新增/保存处理（前端示例：直接修改本地列表；实际应调用后端接口） */
-function saveUser() {
+
+/* 新增/保存处理 */
+function saveDict() {
   editFormRef.value?.validate(async (valid: boolean) => {
     if (!valid) return
     if (isEditing.value && editingIndex.value !== null) {
@@ -220,7 +228,9 @@ function saveUser() {
 
 const multipleSelectionByIds = ref<number[]>([])
 
-/* 批量删除（示例：前端删除，真实场景应调用后端接口） */
+const multipleSelection = ref<DictTyprData[]>([])
+
+/* 批量删除 */
 function batchDelete() {
 
   multipleSelectionByIds.value = multipleSelection.value.map(item => item.id as number)
@@ -236,8 +246,37 @@ function batchDelete() {
   }).then(() => {
     deleteDictByIds(multipleSelectionByIds.value as unknown as number).then((res) => {
       console.log(res);
-      getDictListData();
+      getDictList();
     });
+    ElMessage.success('删除成功')
+  }).catch(() => {
+    // 取消
+  })
+}
+
+const multipleSelectionDictData = ref<DictData[]>([])
+
+const multipleSelectionDataListByIds = ref<number[]>([])
+
+const handleSelectionChangeDictDataList = (val: DictData[]) => {
+  multipleSelectionDictData.value = val
+  console.log(multipleSelectionDictData.value);
+}
+
+/* 批量删除字典列表 */
+function batchDeleteDataList() {
+  multipleSelectionDataListByIds.value = multipleSelectionDictData.value.map(item => item.dictDataId as number)
+
+  console.log(multipleSelectionDataListByIds.value);
+  
+  if (!multipleSelectionDictData.value.length) {
+    ElMessage.warning('请选择要删除的字典数据')
+    return
+  }
+  ElMessageBox.confirm('确定要删除选中的字典数据吗？', '确认', {
+    type: 'warning'
+  }).then(() => {
+    editForm.value.dictDataList = editForm.value.dictDataList?.filter(item => !multipleSelectionDataListByIds.value.includes(item.dictDataId as number))
     ElMessage.success('删除成功')
   }).catch(() => {
     // 取消
@@ -257,19 +296,7 @@ const editForm = ref<editFormData>({
   updateBy: '',
   updateTime: '',
   remark: '',
-  dictDataList: [{
-    dictDataId: null,
-    dictDataSort: null,
-    dictDataLabel: '',
-    dictDataValue: '',
-    isDefault: 'N',
-    dictDataStatus: 0,
-    dictDataCreateBy: '',
-    dictDataCreateTime: '',
-    dictDataUpdateBy: '',
-    dictDataUpdateTime: '',
-    dictDataRemark: '',
-  }]
+  dictDataList: []
 })
 
 const editRules = reactive<FormRules<editFormData>>({
@@ -279,33 +306,39 @@ const editRules = reactive<FormRules<editFormData>>({
   // phone: [{ required: true, message: '请输入电话', trigger: 'blur' }]
 })
 
+function addDictDataList() {
+  editForm.value.dictDataList?.push({
+    dictDataId: null,
+    dictDataSort: null,
+    dictDataLabel: null,
+    dictDataValue: null,
+    isDefault: 'N',
+    dictDataStatus: 1,
+    dictDataCreateBy: null,
+    dictDataCreateTime: null,
+    dictDataUpdateBy: null,
+    dictDataUpdateTime: null,
+    dictDataRemark: null
+  })
+}
+
 
 
 
 const handleSizeChange = (val: number) => {
-  console.log(`${val} items per page`)
   pageSize.value = val;
-  getDictListData()
+  getDictList()
 }
 
 const handleCurrentChange = (val: number) => {
-  console.log(`current page: ${val}`)
   currentPage.value = val;
-  getDictListData()
-}
-
-const handleSelectionChange = (val: FormData[]) => {
-  console.log(val);
-  
-  multipleSelection.value = val
-  console.log(multipleSelection.value);
-  console.log(multipleSelection.value[0]);
+  getDictList()
 }
 
 function handleSearch() {
   // 搜索时从第一页开始
   currentPage.value = 1
-  getDictListData()
+  getDictList()
 }
 
 function handleReset() {
@@ -326,7 +359,7 @@ function handleReset() {
   updateRange.value = null
   currentPage.value = 1
   
-  getDictListData()
+  getDictList()
 }
 
 const defaultTime: [Date, Date] = [
@@ -344,8 +377,6 @@ const parentBorder = ref(false)
 const childBorder = ref(false)
 const preserveExpanded = ref(false)
 
-
-const selectable = (row: any) => ![1, 31].includes(row.id)
 
 </script>
 
@@ -431,7 +462,6 @@ const selectable = (row: any) => ![1, 31].includes(row.id)
   </div>
 
   <div>
-
     <el-table
       :data="dictTableList.data"
       :border="parentBorder"
@@ -440,7 +470,6 @@ const selectable = (row: any) => ![1, 31].includes(row.id)
       :cell-style="{ textAlign: 'center' }"
       style="width: 100%"
     >
-    <el-table-column type="selection" width="55" :selectable="selectable" />
     <el-table-column type="expand">
       <template #default="props">
         <div m="4">
@@ -450,14 +479,12 @@ const selectable = (row: any) => ![1, 31].includes(row.id)
             <el-table-column label="数据键值" prop="dictDataValue" />
             <el-table-column label="默认" prop="isDefault" >
               <template #default="scope">
-                <span v-if="scope.row.isDefault === 'Y'">是</span>
-                <span v-else-if="scope.row.isDefault === 'N'">否</span>
+                <el-switch :model-value="scope.row.isDefault === 'Y'" @change="(val: any) => (scope.row.isDefault = val ? 'Y' : 'N')" />
               </template>
             </el-table-column>
             <el-table-column label="数据状态" prop="dictDataStatus" >
               <template #default="scope">
-                <span v-if="scope.row.dictDataStatus === 0">启用</span>
-                <span v-else-if="scope.row.dictDataStatus === 1">禁用</span>
+                <el-switch :model-value="scope.row.dictDataStatus === 0" @change="(val: any) => (scope.row.dictDataStatus = val ? 0 : 1)" />
               </template>
             </el-table-column>
             <el-table-column label="创建者" prop="dictDataCreateBy" />
@@ -465,12 +492,12 @@ const selectable = (row: any) => ![1, 31].includes(row.id)
             <el-table-column label="修改者" prop="dictDataUpdateBy" />
             <el-table-column label="修改时间" prop="dictDataUpdateTime" />
             <el-table-column label="备注" prop="dictDataRemark" />
-            <el-table-column label="操作" prop="dictDataRemark" >
+            <!-- <el-table-column label="操作" prop="dictDataRemark" >
               <template #default="scope">
                 <el-button type="text" size="small" @click="openEdit(scope.row.id)">编辑</el-button>
                 <el-button type="text" size="small" @click="deleteUser(scope.row.id)">删除</el-button>
               </template>
-            </el-table-column>
+            </el-table-column> -->
           </el-table>
         </div>
       </template>
@@ -479,8 +506,7 @@ const selectable = (row: any) => ![1, 31].includes(row.id)
     <el-table-column label="字典类型" prop="dictType" />
     <el-table-column label="字典状态" prop="status" >
       <template #default="scope">
-        <span v-if="scope.row.status === 0">启用</span>
-        <span v-else-if="scope.row.status === 1">禁用</span>
+        <el-switch :model-value="scope.row.status === 0" @change="(val: any) => (scope.row.status = val ? 0 : 1)" />
       </template>
     </el-table-column>
     <el-table-column label="创建人" prop="createBy" />
@@ -504,7 +530,6 @@ const selectable = (row: any) => ![1, 31].includes(row.id)
       :page-sizes="[10, 20, 30, 50]"
       :size="size"
       :disabled="disabled"
-      :background="background"
       layout="total, sizes, prev, pager, next, jumper"
       :total="dictTableList.total"
       @size-change="handleSizeChange"
@@ -517,44 +542,75 @@ const selectable = (row: any) => ![1, 31].includes(row.id)
   
 
   <!-- 新增/编辑对话框 -->
-  <el-dialog :title="isEditing ? '修改字典' : '新增字典'" v-model="dialogVisible" width="520px">
-    <el-form :model="editForm" :rules="editRules" ref="editFormRef" label-width="100px" label-position="left">
-      <el-form-item label="字典名称" prop="dictName">
-        <el-input v-model="editForm.dictName" placeholder="请输入字典名称" />
-      </el-form-item>
-      <el-form-item label="字典类型" prop="dictType">
-        <el-input v-model="editForm.dictType"  placeholder="请输入字典类型" />
-      </el-form-item>
-      <el-form-item label="字典状态" prop="status">
-        <el-select v-model="editForm.status"  placeholder="请选择字典状态">
-            <el-option label="启用" :value="0" />
-            <el-option label="禁用" :value="1" />
-        </el-select>
-      </el-form-item>
-      <el-form-item v-show="isEditing" label="创建人" prop="createBy">
-        <el-input v-model="editForm.createBy" placeholder="请输入创建人"/>
-      </el-form-item>
-      <el-form-item v-show="isEditing" label="创建时间" prop="createTime" >
-        <el-date-picker 
-            v-model="editForm.createTime" 
-            type="datetime" 
-            value-format="yyyy-MM-DD HH:mm:ss" placeholder="请输入创建时间"/>
-      </el-form-item>
-      <el-form-item v-show="isEditing" label="修改人" prop="updateBy" >
-        <el-input v-model="editForm.updateBy" placeholder="请输入修改人"/>
-      </el-form-item>
-      <el-form-item v-show="isEditing" label="修改时间" prop="updateTime" >
-          <el-date-picker 
-            v-model="editForm.updateTime" 
-            type="datetime" 
-            value-format="yyyy-MM-DD HH:mm:ss" placeholder="请输入修改时间"/>
-      </el-form-item>
-      <el-form-item label="备注" prop="remark" >
-        <el-input v-model="editForm.remark" placeholder="请输入备注"/>
-      </el-form-item>
+  <el-dialog :title="isEditing ? '修改字典' : '新增字典'" v-model="dialogVisible" width="1000px">
+    <el-form :model="editForm" :rules="editRules" ref="editFormRef" label-width="75px" label-position="left">
+      <el-row class="elRow" :gutter="20" style="display: flex; padding: 1vw; ">
+        <el-col :span="8">
+          <el-form-item label="字典名称" prop="dictName">
+            <el-input style="width: 200px;" v-model="editForm.dictName" placeholder="请输入字典名称" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
+          <el-form-item label="字典类型" prop="dictType">
+            <el-input style="width: 200px;" v-model="editForm.dictType"  placeholder="请输入字典类型" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
+          <el-form-item label="字典状态" prop="status">
+            <el-select style="width: 200px;" v-model="editForm.status"  placeholder="请选择字典状态">
+                <el-option label="启用" :value="0" />
+                <el-option label="禁用" :value="1" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
+           <el-form-item v-if="isEditing" label="创建人" prop="createBy">
+            <el-input style="width: 200px;" v-model="editForm.createBy" placeholder="请输入创建人"/>
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
+          <el-form-item v-if="isEditing" label="创建时间" prop="createTime" >
+            <el-date-picker 
+                v-model="editForm.createTime" 
+                type="datetime" 
+                value-format="yyyy-MM-DD HH:mm:ss" placeholder="请输入创建时间"
+                style="width: 200px;"/>
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
+          <el-form-item v-if="isEditing" label="修改人" prop="updateBy" >
+            <el-input style="width: 200px;" v-model="editForm.updateBy" placeholder="请输入修改人"/>
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
+           <el-form-item v-if="isEditing" label="修改时间" prop="updateTime" >
+              <el-date-picker 
+                v-model="editForm.updateTime" 
+                type="datetime" 
+                value-format="yyyy-MM-DD HH:mm:ss" placeholder="请输入修改时间"
+                style="width: 200px;"/>
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
+          <el-form-item label="备注" prop="remark" >
+            <el-input style="width: 200px;" v-model="editForm.remark" placeholder="请输入备注"/>
+          </el-form-item>
+        </el-col>
+      </el-row>
 
-        <el-table :data="editForm.dictDataList" :header-cell-style="{ textAlign: 'center' }" :cell-style="{ textAlign: 'center' }">
-            <el-table-column label="数据标签" prop="dictDataLabel" >
+      <div style="margin-bottom:12px; display:flex; gap:8px;padding-left: 2vw;">
+        <el-button
+          type="primary"
+          @click="addDictDataList"
+        >
+          新增
+        </el-button>
+        <el-button type="danger" @click="batchDeleteDataList">批量删除</el-button>
+      </div>
+
+        <el-table @selection-change="handleSelectionChangeDictDataList" width="1000px" style="overflow: scroll; width: 1000px;" :data="editForm.dictDataList" :header-cell-style="{ textAlign: 'center' }" :cell-style="{ textAlign: 'center' }">
+          <el-table-column type="selection" width="55" />
+          <el-table-column label="数据标签" prop="dictDataLabel" >
               <template #default="scope">
                 <el-input v-model="scope.row.dictDataLabel" placeholder="请输入数据标签"/>
               </template>
@@ -566,32 +622,52 @@ const selectable = (row: any) => ![1, 31].includes(row.id)
             </el-table-column>
             <el-table-column label="默认" prop="isDefault" >
               <template #default="scope">
-                <span v-if="scope.row.isDefault === 'Y'">是</span>
-                <span v-else-if="scope.row.isDefault === 'N'">否</span>
+                <el-switch :model-value="scope.row.isDefault === 'Y'" @change="(val: any) => (scope.row.isDefault = val ? 'Y' : 'N')" />
               </template>
             </el-table-column>
-            <el-table-column label="数据状态" prop="dictDataStatus" >
+            <el-table-column label="是否启用" prop="dictDataStatus" >
               <template #default="scope">
-                <span v-if="scope.row.dictDataStatus === 0">启用</span>
-                <span v-else-if="scope.row.dictDataStatus === 1">禁用</span>
+                <el-switch :model-value="scope.row.dictDataStatus === 0" @change="(val: any) => (scope.row.dictDataStatus = val ? 0 : 1)" />
               </template>
             </el-table-column>
-            <el-table-column label="创建者" prop="dictDataCreateBy" />
-            <el-table-column label="创建时间" prop="dictDataCreateTime" />
-            <el-table-column label="修改者" prop="dictDataUpdateBy" />
-            <el-table-column label="修改时间" prop="dictDataUpdateTime" />
-            <el-table-column label="备注" prop="dictDataRemark" />
-            <el-table-column label="操作" prop="dictDataRemark" >
+            <el-table-column width="100px" v-if="isEditing" label="创建者" prop="dictDataCreateBy" >
               <template #default="scope">
-                <el-button type="text" size="small" @click="openEdit(scope.row.id)">编辑</el-button>
-                <el-button type="text" size="small" @click="deleteUser(scope.row.id)">删除</el-button>
+                <el-input v-model="scope.row.dictDataCreateBy" placeholder="请输入创建者"/>
+              </template>
+            </el-table-column>
+            <el-table-column width="230px" v-if="isEditing" label="创建时间" prop="dictDataCreateTime" >
+              <template #default="scope">
+                <el-date-picker 
+                  v-model="scope.row.dictDataCreateTime" 
+                  type="datetime" 
+                  value-format="yyyy-MM-DD HH:mm:ss" placeholder="请输入创建时间"
+                  style="width: 200px;"/>
+              </template>
+            </el-table-column>
+            <el-table-column width="100px" v-if="isEditing" label="修改者" prop="dictDataUpdateBy" >
+              <template #default="scope">
+                <el-input v-model="scope.row.dictDataUpdateBy" placeholder="请输入修改者"/>
+              </template>
+            </el-table-column>
+            <el-table-column width="230px" v-if="isEditing" label="修改时间" prop="dictDataUpdateTime" >
+              <template #default="scope">
+                <el-date-picker 
+                  v-model="scope.row.dictDataUpdateTime" 
+                  type="datetime" 
+                  value-format="yyyy-MM-DD HH:mm:ss" placeholder="请输入修改时间"
+                  style="width: 200px;"/>
+              </template>
+            </el-table-column>
+            <el-table-column width="200px" label="备注" prop="dictDataRemark" >
+              <template #default="scope">
+                <el-input v-model="scope.row.dictDataRemark" placeholder="请输入备注"/>
               </template>
             </el-table-column>
           </el-table>
     </el-form>
     <template #footer>
       <el-button @click="dialogVisible = false">取消</el-button>
-      <el-button type="primary" @click="saveUser">保存</el-button>
+      <el-button type="primary" @click="saveDict">保存</el-button>
     </template>
   </el-dialog>
 
@@ -607,4 +683,5 @@ const selectable = (row: any) => ![1, 31].includes(row.id)
   align-items: center;
   width: 100%;
 }
+
 </style>
