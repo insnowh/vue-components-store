@@ -156,8 +156,6 @@ const dialogVisible = ref(false);
 
 const isEditing = ref(true);
 
-const editingIndex = ref<number | null>(null)
-
 /* 新增：打开新增对话框 */
 function openAdd() {
   editForm.value = {
@@ -173,7 +171,6 @@ function openAdd() {
     dictDataList: []
   } as editFormData;
   isEditing.value = false
-  editingIndex.value = null
   dialogVisible.value = true
 }
 
@@ -182,8 +179,9 @@ function openAdd() {
 function openEdit(id: number) {
   editForm.value = {} as editFormData;
   selectDictById(id as number).then((res) => {
-    console.log(res);
+    
     editForm.value = res.data;
+    console.log(editForm.value);
   });
   isEditing.value = true
   dialogVisible.value = true
@@ -203,13 +201,12 @@ function deleteUser(id: number){
   })
 }
 
-
-
 /* 新增/保存处理 */
 function saveDict() {
   editFormRef.value?.validate(async (valid: boolean) => {
     if (!valid) return
-    if (isEditing.value && editingIndex.value !== null) {
+    if (isEditing.value) {
+      console.log("更新本地数据");
       // 更新本地数据
       updateDict(editForm.value).then((res) => {
         console.log(res);
@@ -381,6 +378,8 @@ const preserveExpanded = ref(false)
 </script>
 
 <template>
+
+  代重构，将列表中每一项的字典数据展开显示在表格内，且字典数据的新增与编辑功能放在每行的展开行内可选择点击新增弹出字典数据新增或在行内进行编辑修改操作。
 
   <el-form :model="searchForm" label-width="90px" class="search-form" inline>
     <el-row :gutter="12" style="margin-bottom:12px;">
@@ -565,7 +564,7 @@ const preserveExpanded = ref(false)
         </el-col>
         <el-col :span="8">
            <el-form-item v-if="isEditing" label="创建人" prop="createBy">
-            <el-input style="width: 200px;" v-model="editForm.createBy" placeholder="请输入创建人"/>
+            <el-input style="width: 200px;" v-model="editForm.createBy" placeholder="请输入创建人" disabled/>
           </el-form-item>
         </el-col>
         <el-col :span="8">
@@ -573,13 +572,13 @@ const preserveExpanded = ref(false)
             <el-date-picker 
                 v-model="editForm.createTime" 
                 type="datetime" 
-                value-format="yyyy-MM-DD HH:mm:ss" placeholder="请输入创建时间"
+                value-format="yyyy-MM-DD HH:mm:ss" placeholder="请输入创建时间" disabled
                 style="width: 200px;"/>
           </el-form-item>
         </el-col>
         <el-col :span="8">
           <el-form-item v-if="isEditing" label="修改人" prop="updateBy" >
-            <el-input style="width: 200px;" v-model="editForm.updateBy" placeholder="请输入修改人"/>
+            <el-input style="width: 200px;" v-model="editForm.updateBy" placeholder="请输入修改人" disabled/>
           </el-form-item>
         </el-col>
         <el-col :span="8">
@@ -587,7 +586,7 @@ const preserveExpanded = ref(false)
               <el-date-picker 
                 v-model="editForm.updateTime" 
                 type="datetime" 
-                value-format="yyyy-MM-DD HH:mm:ss" placeholder="请输入修改时间"
+                value-format="yyyy-MM-DD HH:mm:ss" placeholder="请输入修改时间" disabled
                 style="width: 200px;"/>
           </el-form-item>
         </el-col>
@@ -632,7 +631,7 @@ const preserveExpanded = ref(false)
             </el-table-column>
             <el-table-column width="100px" v-if="isEditing" label="创建者" prop="dictDataCreateBy" >
               <template #default="scope">
-                <el-input v-model="scope.row.dictDataCreateBy" placeholder="请输入创建者"/>
+                <el-input v-model="scope.row.dictDataCreateBy" placeholder="请输入创建者" disabled/>
               </template>
             </el-table-column>
             <el-table-column width="230px" v-if="isEditing" label="创建时间" prop="dictDataCreateTime" >
@@ -640,13 +639,13 @@ const preserveExpanded = ref(false)
                 <el-date-picker 
                   v-model="scope.row.dictDataCreateTime" 
                   type="datetime" 
-                  value-format="yyyy-MM-DD HH:mm:ss" placeholder="请输入创建时间"
+                  value-format="yyyy-MM-DD HH:mm:ss" placeholder="请输入创建时间" disabled
                   style="width: 200px;"/>
               </template>
             </el-table-column>
             <el-table-column width="100px" v-if="isEditing" label="修改者" prop="dictDataUpdateBy" >
               <template #default="scope">
-                <el-input v-model="scope.row.dictDataUpdateBy" placeholder="请输入修改者"/>
+                <el-input v-model="scope.row.dictDataUpdateBy" placeholder="请输入修改者" disabled/>
               </template>
             </el-table-column>
             <el-table-column width="230px" v-if="isEditing" label="修改时间" prop="dictDataUpdateTime" >
@@ -654,7 +653,7 @@ const preserveExpanded = ref(false)
                 <el-date-picker 
                   v-model="scope.row.dictDataUpdateTime" 
                   type="datetime" 
-                  value-format="yyyy-MM-DD HH:mm:ss" placeholder="请输入修改时间"
+                  value-format="yyyy-MM-DD HH:mm:ss" placeholder="请输入修改时间" disabled
                   style="width: 200px;"/>
               </template>
             </el-table-column>

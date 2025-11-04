@@ -1,8 +1,49 @@
 import request from '../utils/request';
 
-type searchFormData = {}
+type searchFormData = {
+        dictName: string | null,
+        dictType: string | null,
+        status: number | null,
+        createBy: string | null,
+        createStartTime: string | null,
+        createEndTime: string | null,
+        updateBy: string | null,
+        updateStartTime: string | null,
+        updateEndTime: string | null,
+        pageSize: number | null,
+        pageNum: number | null,
+}
 
-type editFormData = {}
+type DictData = {
+        dictDataId: number | null,
+        dictDataSort: number | null,
+        dictDataLabel: string | null,
+        dictDataValue: string | null,
+        isDefault: string | null,
+        dictDataStatus: number | null,
+        dictDataCreateBy: string | null,
+        dictDataCreateById: number | null,
+        dictDataCreateTime: string | null,
+        dictDataUpdateBy: string | null,
+        dictDataUpdateById: number | null,
+        dictDataUpdateTime: string | null,
+        dictDataRemark: string | null,
+}
+
+type editFormData = {
+        id: number | null,
+        dictName: string | null,
+        dictType: string | null,
+        status: number | null,
+        createBy: string | null,
+        createById: number | null,
+        createTime: string | null,
+        updateBy: string | null,
+        updateById: number | null,
+        updateTime: string | null,
+        remark: string | null,
+        dictDataList?: Array<DictData> | null
+}
 
 function getDict(searchFormData:searchFormData) {
     return request({

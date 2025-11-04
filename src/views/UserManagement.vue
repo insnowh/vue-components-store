@@ -2,6 +2,7 @@
 import { getUserList, addUser, updateUser, selectUserById, deleteUserById, deleteUserByIds } from "../api/UserManagement";
 import { onMounted, reactive, ref } from "vue";
 import type { ComponentSize, FormRules } from 'element-plus'
+import { getDict } from "../api/Utils";
 
 /* 新增：引入 Element Plus 表单/输入/选择/日期等组件（按需引入样式） */
 import {
@@ -224,8 +225,30 @@ const searchForm = ref<searchFormData>({
   registerEnd: null
 })
 
+type getDicts = {
+    [key: string]: DictData[]
+}
+
+type DictData = {
+    dictLabel: string | undefined,
+    dictValue: string | undefined,
+    isDefault: string | undefined,
+    status: number | undefined,
+}
+
+const dictData = ref([
+  "user_sex",
+  "permission"
+]);
+
+const dicts = ref<getDicts>({});
+
 onMounted(async () => {
    getUserListData();
+   getDict(dictData.value).then((res) => {
+    dicts.value = res.data;
+    console.log(dicts.value);
+   });
 })
 
 function getUserListData() {
@@ -319,12 +342,10 @@ function log() {
 
       <el-col :span="6">
         <el-form-item label="性别">
-          <el-select v-model="searchForm.sex"  placeholder="请选择性别" style="width: 200px" clearable>
-            <el-option label="男" :value="0" />
-            <el-option label="女" :value="1" />
-            <el-option label="保密" :value="2" />
-          </el-select>
-        </el-form-item>
+            <el-select v-model="searchForm.sex" placeholder="请选择性别" style="width: 200px" clearable>
+              <el-option v-for="item in dicts['user_sex']" :key="String(item.dictValue ?? item.dictLabel ?? '')" :label="item.dictLabel" :value="item.dictValue ?? item.dictLabel ?? ''" />
+            </el-select>
+          </el-form-item>
       </el-col>
 
       <el-col :span="6">
@@ -350,12 +371,10 @@ function log() {
 
       <el-col :span="6">
         <el-form-item label="用户权限">
-          <el-select v-model="searchForm.permission" placeholder="请选择用户权限" style="width: 200px" clearable>
-            <el-option label="管理" :value="0" />
-            <el-option label="员工" :value="1" />
-            <el-option label="用户" :value="2" />
-          </el-select>
-        </el-form-item>
+            <el-select v-model="searchForm.permission" placeholder="请选择用户权限" style="width: 200px" clearable>
+              <el-option  v-for="item in dicts['permission']" :key="String(item.dictValue ?? item.dictLabel ?? '')" :label="item.dictLabel" :value="item.dictValue ?? item.dictLabel ?? ''"  />
+            </el-select>
+          </el-form-item>
       </el-col>
 
       <el-col :span="8">
