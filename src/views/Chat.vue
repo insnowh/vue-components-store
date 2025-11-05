@@ -1,6 +1,23 @@
 <script lang='ts' setup>
 
 import { reactive, ref } from 'vue';
+import { ElInput, ElButton } from 'element-plus'
+import 'element-plus/es/components/input/style/css'
+import 'element-plus/es/components/button/style/css'
+
+// 输入状态与发送逻辑
+const message = ref<string>('')
+function sendMessage() {
+  if (!chatUser.value) return
+  const content = message.value.trim()
+  if (!content) return
+  chatUser.value.chatMesasge.push({
+    time: new Date().toLocaleTimeString().slice(0,5),
+    userName: '我',
+    content
+  })
+  message.value = ''
+}
 
     interface ChatUser {
         userName: string
@@ -131,7 +148,21 @@ import { reactive, ref } from 'vue';
           </div>
         </div>
         <div class="bottom">
-          
+          <div class="bottom-inner">
+            <div class="input-wrap">
+              <el-input
+                v-model="message"
+                type="textarea"
+                :rows="2"
+                class="chat-input"
+                placeholder="输入消息，按回车发送"
+                @keydown.enter.prevent="sendMessage"
+              />
+            </div>
+            <div class="btn-wrap">
+              <el-button type="primary" class="send-btn" @click="sendMessage">发送</el-button>
+            </div>
+          </div>
         </div>
       </div>
       <div v-else>
@@ -229,11 +260,11 @@ import { reactive, ref } from 'vue';
 /* 新增：使用 Grid 布局使 chatArea 内部竖直分布并按比率占位 */
 .chatArea {
   display: grid;
-  grid-template-rows: 0.7fr 6fr 3.3fr; /* top / content / bottom */
-  gap: 0; /* 若需间距可调整 */
-  height: 100%;
-  box-sizing: border-box;
-  overflow: hidden;
+  grid-template-rows: 0.7fr 6fr 3.3fr; /* top / content / bottom (保持原窗口大小) */
+   gap: 0; /* 若需间距可调整 */
+   height: 100%;
+   box-sizing: border-box;
+   overflow: hidden;
 }
 
 /* top / content / bottom 的样式调整 */
@@ -250,26 +281,140 @@ import { reactive, ref } from 'vue';
 }
 
 .chatArea .bottom {
+  /* 保持外层高度不变，input 横向占满，去掉输入边框，底部保留发送按钮高度 */
+  padding: 16px 30px 1vw; /* 底部保留 1vw 的内边距 */
+  border-top: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  background: transparent;
+}
+
+.bottom-inner{
+  display:flex;
+  width:100%;
+  gap:1vw; /* 输入与按钮之间间距为 1vw */
+  align-items:flex-end;
+}
+
+.input-wrap{
+  flex:1 1 auto;
+}
+.chat-input ::v-deep textarea{
+  resize: none;
+  box-sizing: border-box;
+  width:100%;
+  border: 0;           /* 去掉边框 */
+  outline: none;
+  padding: 10px;
+  background: transparent;
+  max-height: 160px;
+}
+.btn-wrap{
+  flex:0 0 auto;
+  display:flex;
+  align-items:flex-end;
+}
+.send-btn{
+  min-height:36px;
+  height:auto;
+  align-self:flex-end;
+}
+ 
+ .userName{
+  font-size: 15px;
+ }
+
+ .newsChatTime{
+  color: #858585;
+  font-size: 15px;
+ }
+
+ .newsChatMesasge{
+  color: #858585;
+  
+ }
+
+ 
+/* 新增：使用 Grid 布局使 chatArea 内部竖直分布并按比率占位 */
+.chatArea {
+  display: grid;
+  grid-template-rows: 0.7fr 6fr 3.3fr; /* top / content / bottom (保持原窗口大小) */
+   gap: 0; /* 若需间距可调整 */
+   height: 100%;
+   box-sizing: border-box;
+   overflow: hidden;
+}
+
+/* top / content / bottom 的样式调整 */
+.chatArea .top {
   padding: 30px;
-  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
   overflow: hidden;
 }
 
-.userAvatarLeft{
-  background-color: #FFFFFF;
-  padding: 10px;
-  border-radius: 10px;
-  max-width: 60%;
-  margin: 10px 0px;
+.chatArea .content {
+  overflow: auto; /* 内容可滚动 */
+  padding: 30px;
+  background: transparent;
 }
 
-.userAvatarRight{
-  background-color: #409EFF;
-  color: white;
-  padding: 10px;
-  border-radius: 10px;
-  max-width: 60%;
-  margin: 10px 0px;
-  margin-left: auto;
+.chatArea .bottom {
+  /* 保持外层高度不变，input 横向占满，去掉输入边框，底部保留发送按钮高度 */
+  padding: 16px 30px 1vw; /* 底部保留 1vw 的内边距 */
+  border-top: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  background: transparent;
 }
+
+.bottom-inner{
+  display:flex;
+  width:100%;
+  gap:1vw; /* 输入与按钮之间间距为 1vw */
+  align-items:flex-end;
+}
+
+.input-wrap{
+  flex:1 1 auto;
+}
+.chat-input ::v-deep textarea{
+  resize: none;
+  box-sizing: border-box;
+  width:100%;
+  border: 0;           /* 去掉边框 */
+  outline: none;
+  padding: 10px;
+  background: transparent;
+  max-height: 160px;
+}
+.btn-wrap{
+  flex:0 0 auto;
+  display:flex;
+  align-items:flex-end;
+}
+.send-btn{
+  min-height:36px;
+  height:auto;
+  align-self:flex-end;
+}
+ 
+ .userAvatarLeft{
+   background-color: #FFFFFF;
+   padding: 10px;
+   border-radius: 10px;
+   max-width: 60%;
+   margin: 10px 0px;
+ }
+ 
+ .userAvatarRight{
+   background-color: #409EFF;
+   color: white;
+   padding: 10px;
+   border-radius: 10px;
+   max-width: 60%;
+   margin: 10px 0px;
+   margin-left: auto;
+ }
 </style>
