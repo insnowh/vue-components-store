@@ -1,25 +1,15 @@
 <script lang='ts' setup>
 
-import { reactive, ref } from 'vue';
+import { reactive, ref, onMounted, onUnmounted } from 'vue';
 import { ElInput, ElButton } from 'element-plus'
 import 'element-plus/es/components/input/style/css'
 import 'element-plus/es/components/button/style/css'
 
-// 输入状态与发送逻辑
-const message = ref<string>('')
-function sendMessage() {
-  if (!chatUser.value) return
-  const content = message.value.trim()
-  if (!content) return
-  chatUser.value.chatMesasge.push({
-    time: new Date().toLocaleTimeString().slice(0,5),
-    userName: '我',
-    content
-  })
-  message.value = ''
-}
+import { useStompWebSocket } from '../utils/stompWebSocket';
+import { getUserConversations, createSingleConversation, createGroupConversation, getConversationDetail, getConversationMessages, getUnreadCount, removeParticipant } from '../api/Chat';
 
     interface ChatUser {
+        
         userName: string
         newsChatMesasge: string
         chatMesasge: chatMesasge[]
@@ -82,37 +72,192 @@ function sendMessage() {
         },
     ])
 
-    let selectChatUser = (item:ChatUser) => {
-        console.log('点击了用户',item)
-        if (chatUser.value === item) {
-            chatUser.value = undefined
-            return
-        }
-        chatUser.value = item
+    type Message = {
+        id: number;
+        conversationId: number;
+        content: string;
+        createdAt: string;
+        isReadByMe: boolean;
+        messageType: number;
+        parentId: number | null;
+        parentMessage: null;
+        senderAvatar: string | null;
+        senderId: number;
+        senderName: string;
+        status: number;
     }
 
-    let chatUser = ref<ChatUser>()
+    type ConversationMessages = {
+        data : Message[] | null;
+    }
+
+
+    let conversationMessages = ref<ConversationMessages>()
+
+    let selectConversation = (item:Conversation) => {
+        console.log('点击了用户',item)
+
+        // 获取会话详情
+        getConversationDetail(item.id).then(response => {
+
+          console.log("获取会话详情:", response);
+        }).catch(error => {
+          console.error("获取会话详情失败:", error);
+        });
+
+        // 获取会话消息列表
+        getConversationMessages(item.id).then(response => {
+          conversationMessages.value = response;
+          console.log("获取会话消息列表:", response);
+        }).catch(error => {
+          console.error("获取会话消息列表失败:", error);
+        });
+
+
+    }
+
+    
+
+
+    // 使用 STOMP WebSocket
+    const { 
+      isConnected, 
+      messages, 
+      connect, 
+      sendMessage: sendStompMessage, 
+      disconnect 
+    } = useStompWebSocket();
+
+    const newMessage = ref('');
+
+    // 并没有必要，因为后端会从JWT中解析出用户ID
+    const currentUserId = ref('user123'); // 实际应从登录信息获取
+
+        
+    // 连接 WebSocket
+    const connectWebSocket = () => {
+      connect();
+    };
+
+    // 断开 WebSocket
+    const disconnectWebSocket = () => {
+      disconnect();
+    };
+
+    // 发送消息
+    const sendMessage = () => {
+      if (newMessage.value.trim()) {
+        const message = {
+          content: newMessage.value,
+          sender: currentUserId.value,
+          timestamp: new Date().toISOString(),
+          type: 'CHAT'
+        };
+        
+        // 发送到后端 @MessageMapping 方法
+        sendStompMessage('/chat.send', message);
+
+        console.log("发送的消息:", message);
+        
+
+        newMessage.value = '';
+      }
+    };
+
+    // 输入状态与发送逻辑
+
+    //TODO: 暂时不需要
+    // function sendMessage() {
+    //   if (!chatUser.value) return
+    //   const content = message.value.trim()
+    //   if (!content) return
+    //   chatUser.value.chatMesasge.push({
+    //     time: new Date().toLocaleTimeString().slice(0,5),
+    //     userName: '我',
+    //     content
+    //   })
+    //   message.value = ''
+    // }
+
+    // 格式化时间
+    const formatTime = (timestamp: string) => {
+      return new Date(timestamp).toLocaleTimeString().slice(0,5);
+    };
+
+    type Conversation = {
+      id: number;
+      avatar: string;
+      isGroup: boolean;
+      participants: string[];
+      title: string|null;
+      type: number;
+      unreadCount: number;
+      updatedAt: string;
+      lastMessage: lastMessage | null;
+      displayName: string | null;
+    };
+
+    type lastMessage = {
+      id: number;
+      conversationId: number;
+      content: string;
+      createdAt: string;
+      isReadByMe: boolean;
+      messageType: number;
+      parentId: number | null;
+      parentMessage: null;
+      senderAvatar: string | null;
+      senderId: number;
+      senderName: string;
+      status: number;
+    };
+
+    const UserConversationsList = ref<Conversation[]>([]);
+
+    // 生命周期
+    onMounted(() => {
+      // 组件挂载时自动连接
+      connectWebSocket();
+
+      // 获取用户会话列表
+      getUserConversations().then(response => {
+        UserConversationsList.value = response.data;
+        console.log("获取用户会话列表:", response);
+      }).catch(error => {
+        console.error("获取用户会话列表失败:", error);
+      });
+
+      
+
+    });
+
+    onUnmounted(() => {
+      // 组件卸载时断开连接
+      disconnectWebSocket();
+    });
+
+
 </script>
 
 <template>
   <el-row>
     <el-col :span="6" style="background-color: #F7F7F7;box-sizing: border-box;padding: 5px 10px 5px 0px;">
-      <div v-for="(item,index) in testUserList" :key="index" class="item-wrapper" @click="selectChatUser(item)">
+      <div v-for="(item,index) in UserConversationsList" :key="index" class="item-wrapper" @click="selectConversation(item)">
         <!-- 透明遮罩层：移除 touchstart.prevent 避免非被动监听警告 -->
         <div class="overlay" tabindex="-1" aria-hidden="true" @mousedown.prevent></div>
         <div class="block">
           <el-row style="width: 100%;">
             <el-col class="avatar" :span="6">
-              <el-avatar shape="square" :size="40"  :src="item.squareUrl" />
+              <el-avatar shape="square" :size="40"  :src="item.avatar" />
             </el-col>
             <el-col :span="18">
               <div class="chatTop">
-                <div class="userName">{{ item.userName }}</div>
-                <div class="newsChatTime">{{ item.newsChatTime }}</div>
+                <div class="userName">{{ item.title ?? (item.participants && item.participants[0]) ?? item.displayName }}</div>
+                <div class="newsChatTime">{{ item.lastMessage ? formatTime(item.lastMessage.createdAt) : '' }}</div>
               </div>
 
               <div class="chatBottom">
-                <div class="newsChatMesasge">{{ item.newsChatMesasge }}</div>
+                <div class="newsChatMesasge">{{ item.lastMessage ? item.lastMessage.content : '' }}</div>
               </div>
             </el-col>
           </el-row>
@@ -120,13 +265,13 @@ function sendMessage() {
       </div>
     </el-col>
     <el-col :span="18" style="background-color: #EDEDED;">
-      <div v-if="chatUser" class="chatArea">
+      <div v-if="conversationMessages" class="chatArea">
         <div class="top">
           <img src="" alt="">
           {{ chatUser.userName }}
         </div>
         <div class="content">
-          <div v-for="(item,index) in chatUser.chatMesasge" :key="index">
+          <div v-for="(item,index) in conversationMessages?.data" :key="index">
             <div class="sendTime">
               <!-- <div v-if="chatUser.chatMesasge[(index-1)||0].time-item.time">
 
@@ -151,7 +296,7 @@ function sendMessage() {
           <div class="bottom-inner">
             <div class="input-wrap">
               <el-input
-                v-model="message"
+                v-model="newMessage"
                 type="textarea"
                 :rows="2"
                 class="chat-input"
@@ -185,7 +330,7 @@ function sendMessage() {
   
 }
 
-/* 透明遮罩层，覆盖在每个项上，拦截点击事件（点击不会触发 selectChatUser） */
+/* 透明遮罩层，覆盖在每个项上，拦截点击事件（点击不会触发 selectConversation） */
 .overlay {
   position: absolute;
   inset: 0;
