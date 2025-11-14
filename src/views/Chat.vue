@@ -5,72 +5,8 @@ import { ElInput, ElButton } from 'element-plus'
 import 'element-plus/es/components/input/style/css'
 import 'element-plus/es/components/button/style/css'
 
-import { useStompWebSocket } from '../utils/stompWebSocket';
+import useStompWebSocket, { type WebSocketMessage } from '../utils/stompWebSocket';
 import { getUserConversations, createSingleConversation, createGroupConversation, getConversationDetail, getConversationMessages, getUnreadCount, removeParticipant } from '../api/Chat';
-
-    interface ChatUser {
-        
-        userName: string
-        newsChatMesasge: string
-        chatMesasge: chatMesasge[]
-        newsChatTime: string
-        squareUrl: string
-    }
-
-    interface chatMesasge {
-        time: string
-        userName: string
-        content: string
-    }
-
-
-
-    let testUserList = ref<ChatUser[]>([
-        {
-            userName: '张三',
-            newsChatMesasge: '你好啊，今天过得怎么样？',
-            chatMesasge: [{
-                time: '10:30',
-                userName: '张三',
-                content: '你好啊，今天过得怎么样？'
-            },
-            {
-                time: '10:32',
-                userName: '我',
-                content: '还不错，你呢？'
-            }],
-            newsChatTime: '10:30',
-            squareUrl:'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png'
-        },
-        {
-            userName: '李四',
-            newsChatMesasge: '今天心情不错，出去玩了',
-            chatMesasge: [],
-            newsChatTime: '09:20',
-            squareUrl:'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png'
-        },
-        {
-            userName: '王五',
-            newsChatMesasge: '工作有点忙，没时间聊天',
-            chatMesasge: [],
-            newsChatTime: '昨天',
-            squareUrl:'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png'
-        },
-        {
-            userName: '赵六',
-            newsChatMesasge: '最近在学习Vue3，很有趣',
-            chatMesasge: [],
-            newsChatTime: '前天',
-            squareUrl:'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png'
-        },
-        {
-            userName: '钱七',
-            newsChatMesasge: '周末一起去爬山吧！',
-            chatMesasge: [],
-            newsChatTime: '周五',
-            squareUrl:'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png'
-        },
-    ])
 
     type Message = {
         id: number;
@@ -91,12 +27,51 @@ import { getUserConversations, createSingleConversation, createGroupConversation
         data : Message[] | null;
     }
 
+    type ChatUser = {
+      id: number | null;
+      avatar: string | null;
+      displayName: string | null;
+      isGroup: boolean | null;
+      participants: string[] | string | null;
+      title: string | null;
+      type: number | null;
+    }
+
+    
+
 
     let conversationMessages = ref<ConversationMessages>()
+
+    let chatUser = ref<ChatUser>({
+      id: null,
+      avatar: null,
+      displayName: null,
+      isGroup: null,
+      participants: null,
+      title: null,
+      type: null,
+    });
 
     let selectConversation = (item:Conversation) => {
         console.log('点击了用户',item)
 
+        if (item.id == chatUser.value.id) {
+          chatUser = ref<ChatUser>({
+            id: null,
+            avatar: null,
+            displayName: null,
+            isGroup: null,
+            participants: null,
+            title: null,
+            type: null,
+          });
+        }else{
+          chatUser.value = item;
+        }
+
+        //TODO: 与会话消息列表中每一项的key完全相同。后续需更改，需要获取额外的数据，
+        // 如参与者(主要是群聊)
+        // 或是一些其他的
         // 获取会话详情
         getConversationDetail(item.id).then(response => {
 
@@ -124,14 +99,18 @@ import { getUserConversations, createSingleConversation, createGroupConversation
       isConnected, 
       messages, 
       connect, 
-      sendMessage: sendStompMessage, 
-      disconnect 
+      // sendMessage: sendStompMessage, 
+      sendMessage, 
+      disconnect,
+      isConnecting, 
+      error, 
+      subscribe 
     } = useStompWebSocket();
 
     const newMessage = ref('');
 
     // 并没有必要，因为后端会从JWT中解析出用户ID
-    const currentUserId = ref('user123'); // 实际应从登录信息获取
+    // const currentUserId = ref('user123'); // 实际应从登录信息获取
 
         
     // 连接 WebSocket
@@ -145,18 +124,25 @@ import { getUserConversations, createSingleConversation, createGroupConversation
     };
 
     // 发送消息
-    const sendMessage = () => {
+    const sendChatMessage = () => {
       if (newMessage.value.trim()) {
         const message = {
           content: newMessage.value,
-          sender: currentUserId.value,
+          conversationId: chatUser.value.id,
+          type: 'CHAT_MESSAGE',
+          // sender: currentUserId.value,
           timestamp: new Date().toISOString(),
-          type: 'CHAT'
+          messageType: 1
         };
         
         // 发送到后端 @MessageMapping 方法
-        sendStompMessage('/chat.send', message);
+        // sendStompMessage('/chat.send', message);
 
+        sendMessage('/chat/send', message, {
+            'priority': 'normal',
+            'persistent': 'true'
+          });
+        
         console.log("发送的消息:", message);
         
 
@@ -164,20 +150,12 @@ import { getUserConversations, createSingleConversation, createGroupConversation
       }
     };
 
-    // 输入状态与发送逻辑
+    // 自定义订阅处理
+    const handleSystemMessage = (message: WebSocketMessage) => {
+      console.log('系统消息:', message);
+      // 处理系统消息逻辑
+    };
 
-    //TODO: 暂时不需要
-    // function sendMessage() {
-    //   if (!chatUser.value) return
-    //   const content = message.value.trim()
-    //   if (!content) return
-    //   chatUser.value.chatMesasge.push({
-    //     time: new Date().toLocaleTimeString().slice(0,5),
-    //     userName: '我',
-    //     content
-    //   })
-    //   message.value = ''
-    // }
 
     // 格式化时间
     const formatTime = (timestamp: string) => {
@@ -212,17 +190,26 @@ import { getUserConversations, createSingleConversation, createGroupConversation
       status: number;
     };
 
-    const UserConversationsList = ref<Conversation[]>([]);
+    const userConversationsList = ref<Conversation[]>([]);
 
     // 生命周期
     onMounted(() => {
       // 组件挂载时自动连接
       connectWebSocket();
 
+      // 添加自定义订阅
+      setTimeout(() => {
+        subscribe('/topic/system', handleSystemMessage, {
+          'ack': 'client'
+        });
+      }, 1000);
+
       // 获取用户会话列表
       getUserConversations().then(response => {
-        UserConversationsList.value = response.data;
+        userConversationsList.value = response.data;
         console.log("获取用户会话列表:", response);
+        console.log(userConversationsList.value);
+        
       }).catch(error => {
         console.error("获取用户会话列表失败:", error);
       });
@@ -242,7 +229,7 @@ import { getUserConversations, createSingleConversation, createGroupConversation
 <template>
   <el-row>
     <el-col :span="6" style="background-color: #F7F7F7;box-sizing: border-box;padding: 5px 10px 5px 0px;">
-      <div v-for="(item,index) in UserConversationsList" :key="index" class="item-wrapper" @click="selectConversation(item)">
+      <div v-for="(item,index) in userConversationsList" :key="index" class="item-wrapper" @click="selectConversation(item)">
         <!-- 透明遮罩层：移除 touchstart.prevent 避免非被动监听警告 -->
         <div class="overlay" tabindex="-1" aria-hidden="true" @mousedown.prevent></div>
         <div class="block">
@@ -265,10 +252,10 @@ import { getUserConversations, createSingleConversation, createGroupConversation
       </div>
     </el-col>
     <el-col :span="18" style="background-color: #EDEDED;">
-      <div v-if="conversationMessages" class="chatArea">
+      <div v-if="chatUser.id" class="chatArea">
         <div class="top">
           <img src="" alt="">
-          {{ chatUser.userName }}
+          {{ chatUser.title || chatUser.displayName || '聊天对象' }}
         </div>
         <div class="content">
           <div v-for="(item,index) in conversationMessages?.data" :key="index">
@@ -281,13 +268,19 @@ import { getUserConversations, createSingleConversation, createGroupConversation
               
             </div> -->
             <div class="userSendContent">
-              <div class="userAvatarLeft" v-if="item.userName==chatUser.userName">
+              <div class="userAvatarLeft" v-if="item.senderName==chatUser.displayName">
                 <!-- <img src="" alt="" srcset=""> -->
-                {{ item.content }}
+                 <span>
+                  {{ item.content }}
+                 </span>
+                
               </div>
               <div class="userAvatarRight" v-else>
-                {{ item.content }}
+                
                 <!-- <img src="" alt="" srcset=""> -->
+                 <span>
+                  {{ item.content }}
+                 </span>
               </div>
             </div>
           </div>
@@ -301,11 +294,11 @@ import { getUserConversations, createSingleConversation, createGroupConversation
                 :rows="2"
                 class="chat-input"
                 placeholder="输入消息，按回车发送"
-                @keydown.enter.prevent="sendMessage"
+                @keydown.enter.prevent="sendChatMessage"
               />
             </div>
             <div class="btn-wrap">
-              <el-button type="primary" class="send-btn" @click="sendMessage">发送</el-button>
+              <el-button type="primary" class="send-btn" @click="sendChatMessage">发送</el-button>
             </div>
           </div>
         </div>
