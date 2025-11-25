@@ -157,6 +157,7 @@ function useStompWebSocket() {
             window.dispatchEvent(new CustomEvent('websocket-message', {
               detail: parsedMessage
             }));
+            
           } catch (error) {
             console.error('消息解析错误:', error, message.body);
           }
@@ -185,26 +186,26 @@ function useStompWebSocket() {
     
     try {
       // 订阅公共通知
-      const notificationSub = client.value.subscribe(
-        '/topic/notifications', 
-        (message: IMessage) => {
-          const notification = JSON.parse(message.body);
-          console.log('收到公共通知:', notification);
-        },
-        { 'id': `topic-notifications-${Date.now()}` }
-      );
-      subscriptions.value.set('/topic/notifications', notificationSub);
+      // const notificationSub = client.value.subscribe(
+      //   '/topic/notifications', 
+      //   (message: IMessage) => {
+      //     const notification = JSON.parse(message.body);
+      //     console.log('收到公共通知:', notification);
+      //   },
+      //   { 'id': `topic-notifications-${Date.now()}` }
+      // );
+      // subscriptions.value.set('/topic/notifications', notificationSub);
       
       // 订阅聊天室消息
-      const chatSub = client.value.subscribe(
-        '/topic/chat/room/*', 
-        (message: IMessage) => {
-          const chatMessage = JSON.parse(message.body);
-          console.log('收到聊天室消息:', chatMessage);
-        },
-        { 'id': `topic-chat-${Date.now()}` }
-      );
-      subscriptions.value.set('/topic/chat/room/*', chatSub);
+      // const chatSub = client.value.subscribe(
+      //   '/topic/chat/room/*', 
+      //   (message: IMessage) => {
+      //     const chatMessage = JSON.parse(message.body);
+      //     console.log('收到聊天室消息:', chatMessage);
+      //   },
+      //   { 'id': `topic-chat-${Date.now()}` }
+      // );
+      // subscriptions.value.set('/topic/chat/room/*', chatSub);
     } catch (err) {
       console.error('订阅公共主题失败:', err);
     }
@@ -263,6 +264,7 @@ function useStompWebSocket() {
       console.log(`已取消订阅: ${destination}`);
     }
   };
+  
 
   /**
    * 发送消息到应用目的地
@@ -273,7 +275,7 @@ function useStompWebSocket() {
   const sendMessage = (
     destination: string, 
     body: any, 
-    headers: StompHeaders = {}
+    headers: StompHeaders
   ): boolean => {
     if (!client.value || !isConnected.value) {
       console.warn('客户端未连接，无法发送消息');

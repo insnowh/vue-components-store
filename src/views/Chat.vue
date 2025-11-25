@@ -1,6 +1,6 @@
 <script lang='ts' setup>
 
-import { reactive, ref, onMounted, onUnmounted } from 'vue';
+import { reactive, ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { ElInput, ElButton } from 'element-plus'
 import 'element-plus/es/components/input/style/css'
 import 'element-plus/es/components/button/style/css'
@@ -52,48 +52,6 @@ import { getUserConversations, createSingleConversation, createGroupConversation
       type: null,
     });
 
-    let selectConversation = (item:Conversation) => {
-        console.log('点击了用户',item)
-
-        if (item.id == chatUser.value.id) {
-          chatUser = ref<ChatUser>({
-            id: null,
-            avatar: null,
-            displayName: null,
-            isGroup: null,
-            participants: null,
-            title: null,
-            type: null,
-          });
-        }else{
-          chatUser.value = item;
-        }
-
-        //TODO: 与会话消息列表中每一项的key完全相同。后续需更改，需要获取额外的数据，
-        // 如参与者(主要是群聊)
-        // 或是一些其他的
-        // 获取会话详情
-        getConversationDetail(item.id).then(response => {
-
-          console.log("获取会话详情:", response);
-        }).catch(error => {
-          console.error("获取会话详情失败:", error);
-        });
-
-        // 获取会话消息列表
-        getConversationMessages(item.id).then(response => {
-          conversationMessages.value = response;
-          console.log("获取会话消息列表:", response);
-        }).catch(error => {
-          console.error("获取会话消息列表失败:", error);
-        });
-
-
-    }
-
-    
-
-
     // 使用 STOMP WebSocket
     const { 
       isConnected, 
@@ -109,8 +67,91 @@ import { getUserConversations, createSingleConversation, createGroupConversation
 
     const newMessage = ref('');
 
+    let selectConversation = (item:Conversation) => {
+         console.log('点击了用户',item)
+
+         if (item.id == chatUser.value.id) {
+           chatUser = ref<ChatUser>({
+             id: null,
+             avatar: null,
+             displayName: null,
+             isGroup: null,
+             participants: null,
+             title: null,
+             type: null,
+           });
+         }else{
+           chatUser.value = item;
+         }
+
+         // 获取会话详情
+         getConversationDetail(item.id).then(response => {
+           console.log("获取会话详情:", response);
+         }).catch(error => {
+           console.error("获取会话详情失败:", error);
+         });
+
+         // 获取会话消息列表
+        getConversationMessages(item.id).then(response => {
+          conversationMessages.value = response;
+          console.log("获取会话消息列表:", response);
+        }).catch(error => {
+          console.error("获取会话消息列表失败:", error);
+        });
+        getConversationMessages(item.id).then(async response => {
+          // 保持原有赋值逻辑
+          conversationMessages.value = response;
+          console.log("获取会话消息列表:", response);
+          // 等待 DOM 更新后，将 .content 滚动到最底部（仅在点击会话时触发）
+          await nextTick();
+          const el = document.querySelector('.chatArea .content') as HTMLElement | null;
+          if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'auto' });
+        }).catch(error => {
+          console.error("获取会话消息列表失败:", error);
+        });
+     }
+
+    
+
     // 并没有必要，因为后端会从JWT中解析出用户ID
     // const currentUserId = ref('user123'); // 实际应从登录信息获取
+
+        // 确保 conversationMessages 已初始化为数组，避免未定义错误
+    if (!conversationMessages.value) {
+      conversationMessages.value = { data: [] }
+    }
+
+    // 监听来自 useStompWebSocket 的 messages，新增消息追加到 conversationMessages.data 末尾
+    watch(
+      messages,
+      (nv: WebSocketMessage[] | undefined, ov: WebSocketMessage[] | undefined) => {
+        console.log("收到新消息:", nv);
+        console.log("旧消息列表:", ov);
+        
+        if (nv === undefined || nv.length === 0) {
+          return;
+        }
+        if (nv[0].content == "") {
+          return;
+          
+        }
+        conversationMessages?.value?.data?.push(nv[0] as any)
+        console.log(conversationMessages?.value?.data);
+        nv.splice(0, nv.length); // 清空 messages，避免重复处理
+        
+        // const newArr = Array.isArray(nv) ? nv : []
+        // const oldArr = Array.isArray(ov) ? ov : []
+        // if (newArr.length > oldArr.length) {
+        //   const toAppend = newArr.slice(oldArr.length)
+        //   if (!conversationMessages.value) conversationMessages.value = { data: [] }
+        //   if (!conversationMessages.value.data) conversationMessages.value.data = []
+        //   conversationMessages.value.data.push(...toAppend as any)
+        // }
+        // console.log(conversationMessages?.value?.data);
+        
+      },
+      { deep: true }
+    )
 
         
     // 连接 WebSocket
@@ -142,11 +183,17 @@ import { getUserConversations, createSingleConversation, createGroupConversation
             'priority': 'normal',
             'persistent': 'true'
           });
+
+          // sendMessage('/private-chat', message, {
+          //   'priority': 'normal',
+          //   'persistent': 'true'
+          // });
         
         console.log("发送的消息:", message);
         
-
-        newMessage.value = '';
+        console.log("当前消息列表:", messages.value);
+        
+        newMessage.value = "";
       }
     };
 
@@ -198,11 +245,15 @@ import { getUserConversations, createSingleConversation, createGroupConversation
       connectWebSocket();
 
       // 添加自定义订阅
-      setTimeout(() => {
-        subscribe('/topic/system', handleSystemMessage, {
+      // setTimeout(() => {
+      //   subscribe('/topic/system', handleSystemMessage, {
+      //     'ack': 'client'
+      //   });
+      // }, 1000);
+
+      subscribe('/user/queue/messages', handleSystemMessage, {
           'ack': 'client'
         });
-      }, 1000);
 
       // 获取用户会话列表
       getUserConversations().then(response => {
@@ -214,20 +265,19 @@ import { getUserConversations, createSingleConversation, createGroupConversation
         console.error("获取用户会话列表失败:", error);
       });
 
-      
-
     });
 
     onUnmounted(() => {
       // 组件卸载时断开连接
       disconnectWebSocket();
     });
+    
 
 
 </script>
 
 <template>
-  <el-row>
+  <el-row class="chat-wrapper">
     <el-col :span="6" style="background-color: #F7F7F7;box-sizing: border-box;padding: 5px 10px 5px 0px;">
       <div v-for="(item,index) in userConversationsList" :key="index" class="item-wrapper" @click="selectConversation(item)">
         <!-- 透明遮罩层：移除 touchstart.prevent 避免非被动监听警告 -->
@@ -313,7 +363,19 @@ import { getUserConversations, createSingleConversation, createGroupConversation
 </template>
 
 <style scoped>
-/* 外层定位容器，负责遮罩定位 */
+/* 页面整体固定为视口高度（剩余屏幕） */
+.chat-wrapper {
+  height: 100vh;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+/* 确保左右两列填满高度 */
+.chat-wrapper > .el-col {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .item-wrapper {
     
   position: relative;
@@ -413,9 +475,17 @@ import { getUserConversations, createSingleConversation, createGroupConversation
 }
 
 .chatArea .content {
-  overflow: auto; /* 内容可滚动 */
+  overflow: auto; /* 内容可滚动（保留滚轮/触摸滚动） */
   padding: 30px;
   background: transparent;
+  /* 隐藏所有平台的滚动条但不影响滚动行为 */
+  -ms-overflow-style: none; /* IE 10+ */
+  scrollbar-width: none; /* Firefox */
+}
+.chatArea .content::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .chatArea .bottom {
@@ -492,9 +562,17 @@ import { getUserConversations, createSingleConversation, createGroupConversation
 }
 
 .chatArea .content {
-  overflow: auto; /* 内容可滚动 */
+  overflow: auto; /* 内容可滚动（保留滚轮/触摸滚动） */
   padding: 30px;
   background: transparent;
+  /* 隐藏所有平台的滚动条但不影响滚动行为 */
+  -ms-overflow-style: none; /* IE 10+ */
+  scrollbar-width: none; /* Firefox */
+}
+.chatArea .content::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .chatArea .bottom {
