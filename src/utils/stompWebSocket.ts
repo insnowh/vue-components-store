@@ -59,7 +59,7 @@ function useStompWebSocket() {
 
     try {
       console.log('Authorization'+ getToken());
-      
+
       // 创建 STOMP 客户端
       client.value = new Client({
         // 使用 SockJS 作为传输层
@@ -186,26 +186,26 @@ function useStompWebSocket() {
     
     try {
       // 订阅公共通知
-      // const notificationSub = client.value.subscribe(
-      //   '/topic/notifications', 
-      //   (message: IMessage) => {
-      //     const notification = JSON.parse(message.body);
-      //     console.log('收到公共通知:', notification);
-      //   },
-      //   { 'id': `topic-notifications-${Date.now()}` }
-      // );
-      // subscriptions.value.set('/topic/notifications', notificationSub);
+      const notificationSub = client.value.subscribe(
+        '/topic/notifications', 
+        (message: IMessage) => {
+          const notification = JSON.parse(message.body);
+          console.log('收到公共通知:', notification);
+        },
+        { 'id': `topic-notifications-${Date.now()}` }
+      );
+      subscriptions.value.set('/topic/notifications', notificationSub);
       
       // 订阅聊天室消息
-      // const chatSub = client.value.subscribe(
-      //   '/topic/chat/room/*', 
-      //   (message: IMessage) => {
-      //     const chatMessage = JSON.parse(message.body);
-      //     console.log('收到聊天室消息:', chatMessage);
-      //   },
-      //   { 'id': `topic-chat-${Date.now()}` }
-      // );
-      // subscriptions.value.set('/topic/chat/room/*', chatSub);
+      const chatSub = client.value.subscribe(
+        '/topic/chat/room/*', 
+        (message: IMessage) => {
+          const chatMessage = JSON.parse(message.body);
+          console.log('收到聊天室消息:', chatMessage);
+        },
+        { 'id': `topic-chat-${Date.now()}` }
+      );
+      subscriptions.value.set('/topic/chat/room/*', chatSub);
     } catch (err) {
       console.error('订阅公共主题失败:', err);
     }
@@ -308,7 +308,7 @@ function useStompWebSocket() {
   const sendToDestination = (
     destination: string,
     body: any,
-    headers: StompHeaders = {}
+    headers: StompHeaders
   ): boolean => {
     if (!client.value || !isConnected.value) {
       console.warn('客户端未连接，无法发送消息');

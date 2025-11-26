@@ -92,12 +92,12 @@ import { getUserConversations, createSingleConversation, createGroupConversation
          });
 
          // 获取会话消息列表
-        getConversationMessages(item.id).then(response => {
-          conversationMessages.value = response;
-          console.log("获取会话消息列表:", response);
-        }).catch(error => {
-          console.error("获取会话消息列表失败:", error);
-        });
+        // getConversationMessages(item.id).then(response => {
+        //   conversationMessages.value = response;
+        //   console.log("获取会话消息列表:", response);
+        // }).catch(error => {
+        //   console.error("获取会话消息列表失败:", error);
+        // });
         getConversationMessages(item.id).then(async response => {
           // 保持原有赋值逻辑
           conversationMessages.value = response;
