@@ -1,5 +1,22 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import JWTUtils from "@/utils/jwtUtils";
+import { useInfoStore } from '../stores/userStores'
+
+// 获取登录的用户信息
+const userInfo = useInfoStore();
+ 
+// 使用示例
+const tokenInfo = JWTUtils.getStoredToken();
+if (tokenInfo) {
+  console.log('用户信息:', tokenInfo.payload);
+  console.log('是否有效:', tokenInfo.isValid);
+  console.log('剩余时间:', JWTUtils.getRemainingTime());
+  
+  if (JWTUtils.isTokenExpiringSoon(tokenInfo)) {
+    console.log('Token即将过期，需要刷新');
+  }
+}
 
 const activeMenu = ref('')
 const handleOpen = (key: string, keyPath: string[]) => {
@@ -8,6 +25,8 @@ const handleOpen = (key: string, keyPath: string[]) => {
 const handleClose = (key: string, keyPath: string[]) => {
   console.log(key, keyPath)
 }
+
+
 
 </script>
 
@@ -45,7 +64,11 @@ const handleClose = (key: string, keyPath: string[]) => {
         <el-container style="height: 100%;">
             <el-header style="background: #fff; box-shadow: 0 2px 8px #f0f1f2; display: flex; align-items: center; justify-content: space-between;">
                 <div style="font-size: 20px; font-weight: bold;">Vue组件仓库</div>
-                <el-avatar icon="el-icon-user" />
+                <div class="user-info">
+                    <span>{{ userInfo.userInfo.username }}</span>
+                    <el-avatar icon="el-icon-user" />
+                </div>
+                
             </el-header>
             <el-main style="height: 100%;">   
                 <router-view />

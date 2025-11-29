@@ -25,6 +25,8 @@ import 'element-plus/es/components/col/style/css'
 import 'element-plus/es/components/card/style/css'
 import router from '@/router'
 import { setToken } from '../utils/auth'
+import { useInfoStore } from '../stores/userStores'
+import cache from '../utils/cache'
 
 type LoginForm = {
   username: string
@@ -39,6 +41,8 @@ type RegisterForm = {
   confirm: string
   sex: 0 | 1 | 2
 }
+
+const userInfo = useInfoStore();
 
 const isLogin = ref(true)
 
@@ -114,7 +118,9 @@ function submitLogin() {
       // 处理登录成功逻辑，如存储token，跳转页面等
       ElMessage.success('登录成功')
       // console.log('login payload', { ...loginForm })
-      setToken(res.data)
+      setToken(res.data["token"])
+      userInfo.setUserInfo(res.data["userInfo"])
+      cache.session.setJSON('sessionObj', "")
       router.push('/index')
     }).catch(err => {
       console.error('login error', err)
