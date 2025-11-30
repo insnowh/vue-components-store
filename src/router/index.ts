@@ -33,6 +33,11 @@ const router = createRouter({
           path: '/dictManagement',
           name: 'DictManagement',
           component:  () => import('../views/DictManagement.vue'),
+        },
+        {
+          path: '/profile',
+          name: 'profile',
+          component:  () => import('../views/Profile.vue'),
         }
       ]
     },

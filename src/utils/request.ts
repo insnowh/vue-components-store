@@ -18,6 +18,9 @@ declare module 'axios' {
 // const requestStore = useRequestStore()
 
 
+// TODO: 判断令牌是否过期
+
+
 let captcha:any;
 
 
@@ -47,7 +50,6 @@ service.interceptors.request.use(config=>{
     if (getToken() && !isToken) {
         config.headers['Authorization'] = getToken()
     }else{
-
         config.headers["captcha"] = captcha
     }
     // console.log(config.headers['Authorization']);

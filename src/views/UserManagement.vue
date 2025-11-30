@@ -140,7 +140,7 @@ function deleteUser(id: number){
 function saveUser() {
   editFormRef.value?.validate(async (valid: boolean) => {
     if (!valid) return
-    if (isEditing.value && editingIndex.value !== null) {
+    if (isEditing.value) {
       // 更新本地数据
       // userList.value.data[editingIndex.value] = { ...editForm }
       updateUser(editForm.value).then((res) => {

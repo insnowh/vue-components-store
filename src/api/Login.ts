@@ -1,6 +1,13 @@
 import axios from 'axios';
 import request from '../utils/request';
-import cache from '../utils/cache';
+import { removeToken } from '../utils/auth';
+import router from '@/router';
+import cache from '../utils/cache'
+
+import { useInfoStore } from "@/stores/userStores"
+
+const userInfo = useInfoStore();
+
 
 type LoginForm = {
   username: string
@@ -46,5 +53,12 @@ function getCaptcha() {
     })
 }
 
+function logout() {
+    removeToken();
+    userInfo.reset();
+    cache.session.remove('sessionObj');
+    router.push('/');
+}
 
-export { login , register , getCaptcha };
+
+export { login , register , getCaptcha , logout };

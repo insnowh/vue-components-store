@@ -1,22 +1,20 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import JWTUtils from "@/utils/jwtUtils";
 import { useInfoStore } from '../stores/userStores'
+import { useRouter } from 'vue-router'
+import { logout } from '@/api/Login';
+
 
 // 获取登录的用户信息
 const userInfo = useInfoStore();
- 
-// 使用示例
-const tokenInfo = JWTUtils.getStoredToken();
-if (tokenInfo) {
-  console.log('用户信息:', tokenInfo.payload);
-  console.log('是否有效:', tokenInfo.isValid);
-  console.log('剩余时间:', JWTUtils.getRemainingTime());
-  
-  if (JWTUtils.isTokenExpiringSoon(tokenInfo)) {
-    console.log('Token即将过期，需要刷新');
-  }
-}
+const router = useRouter();
+
+console.log('userInfo in Index.vue', userInfo.userInfo);
+
+
+userInfo.resetUserInfo()
+
+
 
 const activeMenu = ref('')
 const handleOpen = (key: string, keyPath: string[]) => {
@@ -26,8 +24,29 @@ const handleClose = (key: string, keyPath: string[]) => {
   console.log(key, keyPath)
 }
 
-
-
+// 新增：弹出菜单的处理函数
+const goToProfile = () => {
+  router.push('/profile')
+}
+const goToSettings = () => {
+  router.push('/settings')
+}
+const signOut = () => {
+  logout();
+  // 优先调用 store 的登出方法（如果存在），否则清 token 并跳转到登录页
+  // try {
+  //   if (typeof (userInfo as any).logout === 'function') {
+  //     ;(userInfo as any).logout()
+  //   } else {
+  //     localStorage.removeItem('token')
+  //   }
+  //   ElMessage.success('已退出登录')
+  // } catch (e) {
+  //   console.error(e)
+  // } finally {
+  //   router.push('/login')
+  // }
+}
 </script>
 
 <template>
@@ -64,10 +83,17 @@ const handleClose = (key: string, keyPath: string[]) => {
         <el-container style="height: 100%;">
             <el-header style="background: #fff; box-shadow: 0 2px 8px #f0f1f2; display: flex; align-items: center; justify-content: space-between;">
                 <div style="font-size: 20px; font-weight: bold;">Vue组件仓库</div>
-                <div class="user-info">
+                <el-dropdown trigger="click" placement="bottom-end">
+                  <span class="user-info" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                     <span>{{ userInfo.userInfo.username }}</span>
                     <el-avatar icon="el-icon-user" />
-                </div>
+                  </span>
+                  <template #dropdown>
+                    <el-dropdown-item @click="goToProfile">个人页面</el-dropdown-item>
+                    <el-dropdown-item @click="goToSettings">设置</el-dropdown-item>
+                    <el-dropdown-item divided @click="signOut">退出</el-dropdown-item>
+                  </template>
+                </el-dropdown>
                 
             </el-header>
             <el-main style="height: 100%;">   

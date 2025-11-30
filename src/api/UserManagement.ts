@@ -1,5 +1,7 @@
 import request from '../utils/request';
 import { toRaw } from 'vue'
+import type { userEditFormData } from '@/types/user';
+import { useInfoStore } from '@/stores/userStores';
 
 type searchFormData = {
   username: string
@@ -70,4 +72,47 @@ function deleteUserByIds(id:number) {
     });
 }
 
-export { getUserList, addUser, updateUser, selectUserById, deleteUserById, deleteUserByIds };
+function updateUserSelfInfoById(userForm:userEditFormData){
+    return request({
+        url: `user/updateUserSelfInfo`,
+        data: userForm,
+        method: 'put'
+    })
+}
+
+// 验证用户输入密码是否正确
+function verifyUserPassword(password: string) {
+
+    // 不提取到外面是因为会在Stroe未创建时调用报错
+    const userInfo = useInfoStore();
+    const currentUserId = userInfo.userInfo.id;
+
+    console.log(currentUserId);
+    return request({
+        url: `user/verifyUserPassword`,
+        data: {
+            id: currentUserId,
+            password: password
+        },
+        method: 'post'
+    })
+}
+
+// 修改用户密码
+function editUserPassword(password: string) {
+
+    const userInfo = useInfoStore();
+    const currentUserId = userInfo.userInfo.id;
+
+    console.log(currentUserId);
+    return request({
+        url: `user/editUserPassword`,
+        data: {
+            id: currentUserId,
+            password: password
+        },
+        method: 'put'
+    })
+}
+
+export { getUserList, addUser, updateUser, selectUserById, deleteUserById, deleteUserByIds, updateUserSelfInfoById, verifyUserPassword, editUserPassword };
