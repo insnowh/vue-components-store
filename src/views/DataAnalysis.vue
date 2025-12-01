@@ -1,6 +1,8 @@
 <script lang='ts' setup>
 import { useInfoStore } from '../stores/userStores'
 
+import AdvancedUploader from '../components/AdvancedUploader.vue';
+
 const userInfo = useInfoStore();
 </script>
 
@@ -10,6 +12,8 @@ const userInfo = useInfoStore();
         ????????????
 
         {{ userInfo.userInfo }}
+
+        <AdvancedUploader/>
     </div>
 </template>
 

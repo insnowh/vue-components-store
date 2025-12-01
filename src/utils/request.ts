@@ -13,16 +13,11 @@ declare module 'axios' {
     }
 }
 
-
-
 // const requestStore = useRequestStore()
-
 
 // TODO: 判断令牌是否过期
 
-
 let captcha:any;
-
 
 let isRelogin = {show:false}
 
@@ -30,8 +25,6 @@ const service = axios.create({
     baseURL:"http://localhost:8083/web",
     timeout:10000
 })
-
-
 
 axios.defaults.headers['Content-Type'] = 'application/json;charset=utf-8'
 
@@ -126,9 +119,6 @@ service.interceptors.response.use(res=>{
     // if (res.request.responseType === 'blob' || res.request.responseType === 'arraybuffer'){
     //     return res.data
     // }
-
-    
-
     
     if (code === 401) {
         if (!isRelogin.show) {
