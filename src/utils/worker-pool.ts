@@ -16,7 +16,6 @@ export interface WorkerTask {
 export interface WorkerPoolConfig {
   maxWorkers?: number
   maxTasksPerWorker?: number
-  workerScript?: string
 }
 
 // Worker 包装器
@@ -100,12 +99,10 @@ export class WorkerPool {
   private taskQueue: WorkerTask[] = []
   private maxWorkers: number
   private maxTasksPerWorker: number
-  private workerScript: any
 
   constructor(config: WorkerPoolConfig = {}) {
     this.maxWorkers = config.maxWorkers || navigator.hardwareConcurrency || 2
     this.maxTasksPerWorker = config.maxTasksPerWorker || 5
-    this.workerScript = config.workerScript || HashWorker
     
     this.initializeWorkers()
   }
@@ -119,7 +116,7 @@ export class WorkerPool {
   }
 
   private createWorker(): WorkerWrapper {
-    const worker = new WorkerWrapper(this.workerScript, this.maxTasksPerWorker)
+    const worker = new WorkerWrapper(HashWorker, this.maxTasksPerWorker)
     this.workers.push(worker)
     return worker
   }
@@ -186,25 +183,8 @@ export class WorkerPool {
       totalWorkers: this.workers.length,
       maxWorkers: this.maxWorkers,
       queuedTasks: this.taskQueue.length,
-      activeTasks: totalTasks,
-      workers: this.workers.map((worker, index) => ({
-        id: index,
-        taskCount: worker.getTaskCount()
-      }))
+      activeTasks: totalTasks
     }
-  }
-
-  // 调整池大小
-  resize(maxWorkers: number): void {
-    this.maxWorkers = maxWorkers
-    
-    // 如果新的大小小于当前 Worker 数量，终止多余的 Worker
-    while (this.workers.length > this.maxWorkers) {
-      const worker = this.workers.pop()
-      worker?.terminate()
-    }
-
-    this.processQueue()
   }
 
   // 清理所有 Worker
@@ -212,13 +192,6 @@ export class WorkerPool {
     this.workers.forEach(worker => worker.terminate())
     this.workers = []
     this.taskQueue = []
-  }
-
-  // 等待所有任务完成
-  async drain(): Promise<void> {
-    while (this.taskQueue.length > 0 || this.getStatus().activeTasks > 0) {
-      await new Promise(resolve => setTimeout(resolve, 100))
-    }
   }
 }
 

@@ -51,11 +51,6 @@ export class WorkerManager {
     return this.workerPool.getStatus()
   }
 
-  // 调整 Worker 池大小
-  resizeWorkerPool(maxWorkers: number): void {
-    this.workerPool.resize(maxWorkers)
-  }
-
   // 清理
   destroy(): void {
     this.workerPool.terminate()

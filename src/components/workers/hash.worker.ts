@@ -1,8 +1,6 @@
 // src/components/workers/hash.worker.ts
 
 // 导入SparkMD5库
-// importScripts('https://cdn.jsdelivr.net/npm/spark-md5@3.0.2/spark-md5.min.js')
-// import SparkMD5 from 'spark-md5/dist/spark-md5.min.js';
 import SparkMD5 from "spark-md5"
 
 // Worker 消息接口
@@ -107,4 +105,3 @@ function calculateFileHash(taskId: string, file: File, chunkSize: number): void 
 
 // 确保 TypeScript 知道这是 Worker 上下文
 export default null as any
-
