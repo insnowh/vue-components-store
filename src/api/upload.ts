@@ -69,7 +69,7 @@ function checkFileExist(data: CheckFileExistRequest): Promise<CheckFileExistResp
   })
 }
 
-// 上传文件分片
+// 上传文件分片 - 增加更好的错误处理
 function uploadChunk(data: UploadChunkData, onProgress?: (progress: UploadProgress) => void): Promise<any> {
   const formData = new FormData()
   
@@ -89,7 +89,7 @@ function uploadChunk(data: UploadChunkData, onProgress?: (progress: UploadProgre
     headers: {
       'Content-Type': 'multipart/form-data'
     },
-    timeout: 30000,
+    timeout: 60000, // 增加超时时间
     onUploadProgress: (progressEvent) => {
       if (onProgress && progressEvent.total) {
         const progress: UploadProgress = {
@@ -230,6 +230,17 @@ function verifyResume(fileHash: string, fileName: string): Promise<{
   })
 }
 
+function pauseUpload(fileHash: string, fileName: string): Promise<void>  {
+  return request({
+    url: 'upload/pause',
+    params: {
+      fileHash,
+      fileName
+    },
+    method: 'post'
+  })
+}
+
 export {
 
     // API 函数
@@ -244,7 +255,8 @@ export {
     deleteUploadTasks,
     getUploadStats,
     batchUpload,
-    verifyResume
+    verifyResume,
+    pauseUpload
 }
 export type {
     // 接口类型

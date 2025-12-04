@@ -63,7 +63,7 @@ const signOut = () => {
             active-text-color="#ffd04b"
             @open="handleOpen"
             @close="handleClose">
-            <el-menu-item index="">首页</el-menu-item>
+            <el-menu-item index="index">首页</el-menu-item>
             <el-sub-menu index="1">
                 <template #title>
                     <span>聊天</span>
