@@ -190,6 +190,29 @@ interface UploadStats {
   estimatedTime: number
 }
 
+// 分片验证请求接口
+interface ValidateChunksRequest {
+  fileHash: string
+  fileName: string
+  totalChunks: number
+}
+
+// 分片验证响应接口
+interface ValidateChunksResponse {
+  success: boolean
+  valid: boolean
+  message: string
+}
+
+// 验证分片完整性
+function validateChunks(data: ValidateChunksRequest): Promise<ValidateChunksResponse> {
+  return request({
+    url: 'upload/validate',
+    data,
+    method: 'post'
+  })
+}
+
 function getUploadStats(): Promise<UploadStats> {
   return request({
     url: 'upload/stats',
@@ -256,7 +279,8 @@ export {
     getUploadStats,
     batchUpload,
     verifyResume,
-    pauseUpload
+    pauseUpload,
+    validateChunks
 }
 export type {
     // 接口类型
@@ -267,5 +291,7 @@ export type {
     CheckFileExistResponse,
     UploadProgress,
     UploadTask,
-    UploadStats
+    UploadStats,
+    ValidateChunksRequest,
+    ValidateChunksResponse
 }
