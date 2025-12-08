@@ -115,4 +115,16 @@ function editUserPassword(password: string) {
     })
 }
 
-export { getUserList, addUser, updateUser, selectUserById, deleteUserById, deleteUserByIds, updateUserSelfInfoById, verifyUserPassword, editUserPassword };
+// 上传用户头像（返回头像URL）
+function uploadUserAvatar(formData: FormData) {
+    return request({
+        url: 'user/uploadAvatar',
+        data: formData,
+        method: 'post',
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    });
+}
+
+export { getUserList, addUser, updateUser, selectUserById, deleteUserById, deleteUserByIds, updateUserSelfInfoById, verifyUserPassword, editUserPassword, uploadUserAvatar };

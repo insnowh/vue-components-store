@@ -11,10 +11,13 @@ const router = useRouter();
 
 console.log('userInfo in Index.vue', userInfo.userInfo);
 
+const BASE_URL = 'http://localhost:8083';
+
+
 
 userInfo.resetUserInfo()
 
-
+console.log('userInfo after reset in Index.vue', userInfo.userInfo);
 
 const activeMenu = ref('')
 const handleOpen = (key: string, keyPath: string[]) => {
@@ -77,6 +80,7 @@ const signOut = () => {
                 </el-sub-menu>
             </el-sub-menu>
             <el-menu-item index="dictManagement">字典管理</el-menu-item>
+            <el-menu-item index="upload">文件上传</el-menu-item>
             </el-menu>
         </el-aside>
 
@@ -86,7 +90,7 @@ const signOut = () => {
                 <el-dropdown trigger="click" placement="bottom-end">
                   <span class="user-info" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                     <span>{{ userInfo.userInfo.username }}</span>
-                    <el-avatar icon="el-icon-user" />
+                    <el-avatar :size="48" :src="BASE_URL + userInfo.userInfo.avatar" />
                   </span>
                   <template #dropdown>
                     <el-dropdown-item @click="goToProfile">个人页面</el-dropdown-item>

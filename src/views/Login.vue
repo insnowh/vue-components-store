@@ -119,6 +119,8 @@ function submitLogin() {
       ElMessage.success('登录成功')
       // console.log('login payload', { ...loginForm })
       setToken(res.data["token"])
+      console.log('用户信息',res.data["userInfo"]);
+      
       userInfo.setUserInfo(res.data["userInfo"])
       cache.session.setJSON('sessionObj', "")
       router.push('/index')

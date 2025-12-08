@@ -38,6 +38,11 @@ const router = createRouter({
           path: '/profile',
           name: 'profile',
           component:  () => import('../views/Profile.vue'),
+        },
+        {
+          path: '/upload',
+          name: 'upload',
+          component:  () => import('../views/FileUpload.vue'),
         }
       ]
     },

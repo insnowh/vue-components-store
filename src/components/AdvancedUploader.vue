@@ -63,7 +63,7 @@ const uploadManager = {
     this.activeUploads.forEach((controller, taskId) => {
       if (controller && !controller.signal.aborted) {
         controller.abort('pause')
-        console.log(`中止上传任务: ${taskId}`)
+        // console.log(`中止上传任务: ${taskId}`)
       }
     })
   },
@@ -73,7 +73,7 @@ const uploadManager = {
     this.activeUploads.forEach((controller, taskId) => {
       if (controller && !controller.signal.aborted) {
         controller.abort()
-        console.log(`取消上传任务: ${taskId}`)
+        // console.log(`取消上传任务: ${taskId}`)
       }
     })
     this.activeUploads.clear()
@@ -294,31 +294,6 @@ const checkFileExist = async (params) => {
       uploadedChunks: [] 
     }
   }
-  
-  // 原模拟代码：
-  /*
-  try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    // 模拟10%的概率文件已存在 (秒传)
-    if (Math.random() < 0.1) {
-      return { exist: true }
-    }
-    
-    // 模拟返回已上传的分片 (用于断点续传)
-    const uploadedChunks = Math.random() < 0.3 ? 
-      Array.from({length: Math.floor(Math.random() * 5)}, (_, i) => i) : []
-      
-    return { 
-      exist: false, 
-      uploadedChunks 
-    }
-  } catch (error) {
-    console.error('检查文件存在失败:', error)
-    return { exist: false, uploadedChunks: [] }
-  }
-  */
 }
 
 // 更新文件进度
@@ -394,117 +369,17 @@ async function validateChunks(fileObj) {
   }
 }
 
-
-
-// 上传单个分片 - 实际API调用
-const uploadChunk = async (fileObj, chunk) => {
-  // 如果分片已经上传完成，直接返回
-  if (chunk.uploaded) {
-    return Promise.resolve()
-  }
-  
-  // 创建分片独立的AbortController
-  const chunkController = new AbortController()
-  chunk.controller = chunkController
-  
-  // 最大重试次数
-  const MAX_RETRIES = 5
-  const RETRY_DELAY = 2000 // 2秒重试延迟
-  
-  return new Promise((resolve, reject) => {
-    const attemptUpload = (retryCount = 0) => {
-      // 检查状态
-      if (fileObj.status === FILE_STATUS.CANCELLED) {
-        reject(new Error('Upload cancelled'))
-        return
-      }
-      if (fileObj.status === FILE_STATUS.PAUSED) {
-        resolve({ paused: true })
-        return
-      }
-      
-      console.log(`上传分片 ${chunk.index}，第 ${retryCount + 1} 次尝试`)
-      
-      // 实际API调用
-      apiUploadChunk(
-        {
-          file: chunk.chunk,
-          fileHash: fileObj.fileHash,
-          chunkIndex: chunk.index,
-          totalChunks: fileObj.totalChunks,
-          fileName: fileObj.name,
-          chunkSize: CHUNK_SIZE,
-          fileSize: fileObj.size
-        },
-        (progress) => {
-          chunk.progress = progress.progress
-        }
-      )
-        .then((response) => {
-          console.log(`分片 ${chunk.index} 上传成功`, response)
-          chunk.uploaded = true
-          chunk.progress = 100
-          chunk.controller = null
-          chunk.retryCount = 0
-          chunk.error = null
-          resolve()
-        })
-        .catch(async (error) => {
-          console.error(`分片 ${chunk.index} 上传失败:`, error)
-          chunk.error = error.message
-          
-          // 检查是否是用户操作导致的错误
-          if (error.code === 'ERR_CANCELED' || 
-              error.message.includes('AbortError') ||
-              error.message.includes('cancelled')) {
-            resolve({ paused: true })
-            return
-          }
-          
-          // 检查HTTP状态码
-          if (error.response) {
-            console.error('错误响应数据:', error.response.data)
-            console.error('错误状态码:', error.response.status)
-            
-            // 如果是400错误，可能是临时文件问题，可以重试
-            if (error.response.status === 400) {
-              console.warn(`分片 ${chunk.index} 400错误，将重试`)
-            }
-          }
-          
-          if (retryCount < MAX_RETRIES) {
-            // 延迟重试，使用指数退避策略
-            const delay = RETRY_DELAY * Math.pow(2, retryCount)
-            console.warn(`分片 ${chunk.index} 将在 ${delay}ms 后重试 (${retryCount + 1}/${MAX_RETRIES})`)
-            
-            setTimeout(() => {
-              attemptUpload(retryCount + 1)
-            }, delay)
-          } else {
-            // 超过最大重试次数
-            const errorMsg = `分片 ${chunk.index} 上传失败，已达最大重试次数: ${error.message}`
-            console.error(errorMsg)
-            reject(new Error(errorMsg))
-          }
-        })
-    }
-    
-    // 开始上传
-    attemptUpload()
-  })
-}
-
 // 合并分片（增强错误处理）
 const mergeChunks = async (fileObj) => {
 
-  console.log(`开始合并分片: ${fileObj.name}`)
+  // console.log(`开始合并分片: ${fileObj.name}`)
   
   // 验证分片完整性
   const isValid = await validateChunks(fileObj)
   if (!isValid) {
     throw new Error('分片不完整，无法合并')
   }
-  console.log(`开始合并分片: ${fileObj.name}, 总片数: ${fileObj.totalChunks}`)
+  // console.log(`开始合并分片: ${fileObj.name}, 总片数: ${fileObj.totalChunks}`)
   
   // 验证所有分片都已上传
   const missingChunks = fileObj.chunks
@@ -529,8 +404,8 @@ const mergeChunks = async (fileObj) => {
     })
     
     if (response.success) {
-      console.log('合并成功:', response.fileUrl)
-      ElMessage.success(`文件 "${fileObj.name}" 合并成功`)
+      // console.log('合并成功:', response.fileUrl)
+      // ElMessage.success(`文件 "${fileObj.name}" 合并成功`)
     } else {
       throw new Error(response.message || '合并失败')
     }
@@ -545,7 +420,7 @@ const mergeChunks = async (fileObj) => {
       if (error.response.data?.message?.includes('分片缺失')) {
         // 重新检查已上传分片
         const uploadedChunks = await getUploadedChunks(fileObj.fileHash, fileObj.name)
-        console.log('服务器端已上传分片:', uploadedChunks)
+        // console.log('服务器端已上传分片:', uploadedChunks)
         
         // 找出实际缺失的分片
         const serverMissing = Array.from({length: fileObj.totalChunks}, (_, i) => i)
@@ -568,7 +443,7 @@ const pauseUpload = async (fileObj) => {
     return
   }
   
-  console.log(`暂停上传文件: ${fileObj.name}, 当前状态: ${fileObj.status}`)
+  // console.log(`暂停上传文件: ${fileObj.name}, 当前状态: ${fileObj.status}`)
   
   fileObj.pausing = true
   
@@ -586,7 +461,7 @@ const pauseUpload = async (fileObj) => {
     
     // 中止文件级别的控制器
     if (fileObj.controller) {
-      console.log(`中止文件控制器: ${fileObj.name}`)
+      // console.log(`中止文件控制器: ${fileObj.name}`)
       fileObj.controller.abort('pause')
       fileObj.controller = null
     }
@@ -594,7 +469,7 @@ const pauseUpload = async (fileObj) => {
     // 中止所有分片的上传
     fileObj.chunks.forEach(chunk => {
       if (chunk.controller) {
-        console.log(`中止分片 ${chunk.index} 的控制器`)
+        // console.log(`中止分片 ${chunk.index} 的控制器`)
         chunk.controller.abort('pause')
         chunk.controller = null
       }
@@ -606,14 +481,14 @@ const pauseUpload = async (fileObj) => {
     // 通知后端暂停上传
     try {
       await apiPauseUpload(fileObj.fileHash, fileObj.name)
-      console.log(`通知后端暂停上传成功: ${fileObj.name}`)
+      // console.log(`通知后端暂停上传成功: ${fileObj.name}`)
     } catch (error) {
       console.error('通知后端暂停上传失败:', error)
       // 不抛出错误，暂停操作应该继续
     }
     
     ElMessage.info(`文件 "${fileObj.name}" 已暂停 (进度: ${fileObj.progress}%)`)
-    console.log(`文件 "${fileObj.name}" 暂停完成`)
+    // console.log(`文件 "${fileObj.name}" 暂停完成`)
     
   } catch (error) {
     console.error('暂停上传时出错:', error)
@@ -632,13 +507,13 @@ const resumeUpload = async (fileObj) => {
     return
   }
   
-  console.log(`恢复上传文件: ${fileObj.name}, 之前进度: ${fileObj.progress}%`)
+  // console.log(`恢复上传文件: ${fileObj.name}, 之前进度: ${fileObj.progress}%`)
   
   try {
     // 1. 检查是否可以恢复
-    console.log('检查恢复状态...')
+    // console.log('检查恢复状态...')
     const response = await verifyResume(fileObj.fileHash, fileObj.name)
-    console.log('恢复检查结果:', response)
+    // console.log('恢复检查结果:', response)
     
     if (!response?.success) {
       throw new Error('恢复检查失败: ' + (response?.message || '未知错误'))
@@ -651,7 +526,7 @@ const resumeUpload = async (fileObj) => {
     
     // 2. 获取已上传的分片
     const uploadedChunks = verifyResult.uploadedChunks || []
-    console.log(`已上传分片数量: ${uploadedChunks.length}`)
+    // console.log(`已上传分片数量: ${uploadedChunks.length}`)
     
     // 3. 设置状态为上传中
     fileObj.status = FILE_STATUS.UPLOADING
@@ -666,7 +541,7 @@ const resumeUpload = async (fileObj) => {
     // 6. 检查是否需要合并
     const allChunksUploaded = fileObj.chunks.every(chunk => chunk.uploaded)
     if (allChunksUploaded && fileObj.status === FILE_STATUS.UPLOADING) {
-      console.log('所有分片上传完成，开始合并')
+      // console.log('所有分片上传完成，开始合并')
       await mergeChunks(fileObj)
       fileObj.status = FILE_STATUS.SUCCESS
       ElMessage.success(`文件 "${fileObj.name}" 上传成功`)
@@ -707,7 +582,7 @@ const resumeUpload = async (fileObj) => {
 
 // 重置分片状态（不重新切片）
 const resetChunksStatus = async (fileObj, uploadedChunks = []) => {
-  console.log(`重置分片状态，总片数: ${fileObj.totalChunks}, 已上传: ${uploadedChunks.length}`)
+  // console.log(`重置分片状态，总片数: ${fileObj.totalChunks}, 已上传: ${uploadedChunks.length}`)
   
   // 如果分片已存在，只更新状态
   if (fileObj.chunks && fileObj.chunks.length > 0) {
@@ -732,7 +607,7 @@ const resetChunksStatus = async (fileObj, uploadedChunks = []) => {
   }
   fileObj.progress = Math.min(Math.round((uploadedChunks.length / fileObj.totalChunks) * 100), 100)
   
-  console.log(`重置完成，进度: ${fileObj.progress}%`)
+  // console.log(`重置完成，进度: ${fileObj.progress}%`)
 }
 
 // 上传缺失的分片
@@ -741,11 +616,11 @@ const uploadMissingChunks = async (fileObj) => {
   const totalMissing = missingChunks.length
   
   if (totalMissing === 0) {
-    console.log('没有缺失分片，无需上传')
+    // console.log('没有缺失分片，无需上传')
     return
   }
   
-  console.log(`开始上传 ${totalMissing} 个缺失分片`)
+  // console.log(`开始上传 ${totalMissing} 个缺失分片`)
   
   // 使用简单的串行上传，避免并发问题
   for (let i = 0; i < missingChunks.length; i++) {
@@ -753,11 +628,11 @@ const uploadMissingChunks = async (fileObj) => {
     
     // 检查状态
     if (fileObj.status !== FILE_STATUS.UPLOADING) {
-      console.log(`上传中断，状态变为: ${fileObj.status}`)
+      // console.log(`上传中断，状态变为: ${fileObj.status}`)
       break
     }
     
-    console.log(`上传分片 ${chunk.index + 1}/${fileObj.totalChunks}`)
+    // console.log(`上传分片 ${chunk.index + 1}/${fileObj.totalChunks}`)
     
     try {
       await uploadSingleChunkSafely(fileObj, chunk)
@@ -780,7 +655,7 @@ const uploadMissingChunks = async (fileObj) => {
         chunk.progress = 100
       } else {
         // 其他错误，重试一次
-        console.log(`重试分片 ${chunk.index}`)
+        // console.log(`重试分片 ${chunk.index}`)
         try {
           await uploadSingleChunkSafely(fileObj, chunk)
         } catch (retryError) {
@@ -809,7 +684,7 @@ const uploadSingleChunkSafely = async (fileObj, chunk) => {
       return
     }
     
-    console.log(`上传分片 ${chunk.index}, 大小: ${chunk.chunk.size} 字节`)
+    // console.log(`上传分片 ${chunk.index}, 大小: ${chunk.chunk.size} 字节`)
     
     apiUploadChunk(
       {
@@ -852,7 +727,7 @@ const uploadSingleChunkSafely = async (fileObj, chunk) => {
 // 从头开始上传
 const restartFromBeginning = async (fileObj) => {
   try {
-    console.log(`从头开始上传文件: ${fileObj.name}`)
+    // console.log(`从头开始上传文件: ${fileObj.name}`)
     
     // 重置状态
     fileObj.status = FILE_STATUS.UPLOADING
@@ -884,44 +759,6 @@ const restartFromBeginning = async (fileObj) => {
   }
 }
 
-// 修复上传状态（在恢复前调用）
-const fixUploadState = async (fileObj) => {
-  try {
-    console.log(`修复上传状态: ${fileObj.name}`)
-    
-    // 获取当前已上传的分片
-    const uploadedChunks = await getUploadedChunks(fileObj.fileHash, fileObj.name)
-    
-    // 检查分片连续性
-    const allChunks = Array.from({length: fileObj.totalChunks}, (_, i) => i)
-    const missingChunks = allChunks.filter(index => !uploadedChunks.includes(index))
-    
-    console.log(`已上传分片: ${uploadedChunks.length}, 缺失分片: ${missingChunks.length}`)
-    
-    if (missingChunks.length > 0 && missingChunks.length < 10) {
-      // 如果缺失的分片很少，尝试重新上传
-      console.log('尝试重新上传缺失分片:', missingChunks)
-      
-      for (const chunkIndex of missingChunks) {
-        try {
-          // 清理可能损坏的分片文件
-          await cleanupChunkFile(fileObj.fileHash, fileObj.name, chunkIndex)
-        } catch (error) {
-          console.warn(`清理分片 ${chunkIndex} 失败:`, error)
-        }
-      }
-    }
-    
-    return uploadedChunks
-    
-  } catch (error) {
-    console.error('修复上传状态失败:', error)
-    return []
-  }
-}
-
-
-
 // 新增方法：获取已上传的分片列表
 async function getUploadedChunks(fileHash, fileName) {
   try {
@@ -935,124 +772,6 @@ async function getUploadedChunks(fileHash, fileName) {
     return []
   }
 }
-
-// 新增方法：上传单个分片（简化版）
-async function uploadSingleChunk(fileObj, chunk) {
-  return new Promise((resolve, reject) => {
-    apiUploadChunk(
-      {
-        file: chunk.chunk,
-        fileHash: fileObj.fileHash,
-        chunkIndex: chunk.index,
-        totalChunks: fileObj.totalChunks,
-        fileName: fileObj.name,
-        chunkSize: CHUNK_SIZE,
-        fileSize: fileObj.size
-      },
-      (progress) => {
-        chunk.progress = progress.progress
-      }
-    )
-      .then(() => {
-        chunk.uploaded = true
-        chunk.progress = 100
-        chunk.error = null
-        
-        // 更新文件进度
-        const uploadedChunks = fileObj.chunks.filter(c => c.uploaded).length
-        fileObj.uploadedChunks = uploadedChunks
-        fileObj.progress = Math.min(Math.round((uploadedChunks / fileObj.totalChunks) * 100), 100)
-        updateStats()
-        
-        resolve()
-      })
-      .catch((error) => {
-        chunk.error = error.message
-        reject(error)
-      })
-  })
-}
-
-// 暂停后重新初始化分片
-const reinitializeChunksAfterPause = async (fileObj, uploadedChunks = []) => {
-  const file = fileObj.file
-  const totalChunks = fileObj.totalChunks
-  
-  console.log(`重新初始化分片，总片数: ${totalChunks}, 已上传: ${uploadedChunks.length}`)
-  
-  // 重新创建分片数组
-  const newChunks = []
-  
-  for (let index = 0; index < totalChunks; index++) {
-    const start = index * CHUNK_SIZE
-    const end = Math.min(start + CHUNK_SIZE, file.size)
-    
-    // 重新slice文件，获取新的Blob
-    const chunk = file.slice(start, end)
-    
-    const isUploaded = uploadedChunks.includes(index)
-    
-    newChunks.push({
-      index,
-      start,
-      end,
-      chunk,
-      uploaded: isUploaded,
-      progress: isUploaded ? 100 : 0,
-      controller: null,
-      retryCount: 0,
-      error: null
-    })
-  }
-  
-  fileObj.chunks = newChunks
-  
-  // 更新文件进度
-  const uploadedSize = newChunks
-    .filter(chunk => chunk.uploaded)
-    .reduce((total, chunk) => total + (chunk.end - chunk.start), 0)
-  
-  fileObj.uploadedSize = uploadedSize
-  fileObj.uploadedChunks = uploadedChunks.length
-  fileObj.progress = Math.min(Math.round((uploadedSize / fileObj.size) * 100), 100)
-  
-  console.log(`重新初始化完成: 已上传 ${uploadedSize} 字节，进度 ${fileObj.progress}%`)
-}
-
-// 重新初始化分片
-const reinitializeChunks = async (fileObj, uploadedChunks = []) => {
-  const file = fileObj.file
-  const totalChunks = fileObj.totalChunks
-  
-  // 重新创建分片数组，但保留已上传的分片
-  const newChunks = []
-  
-  for (let index = 0; index < totalChunks; index++) {
-    const start = index * CHUNK_SIZE
-    const end = Math.min(start + CHUNK_SIZE, file.size)
-    
-    // 重新slice文件，获取新的Blob
-    const chunk = file.slice(start, end)
-    
-    const isUploaded = uploadedChunks.includes(index)
-    
-    newChunks.push({
-      index,
-      start,
-      end,
-      chunk,
-      uploaded: isUploaded,
-      progress: isUploaded ? 100 : 0,
-      controller: null,
-      retryCount: 0,
-      error: null
-    })
-  }
-  
-  fileObj.chunks = newChunks
-  updateFileProgress(fileObj)
-}
-
 
 // 取消上传
 const cancelUpload = async (fileObj) => {
