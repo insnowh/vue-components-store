@@ -43,6 +43,11 @@ const router = createRouter({
           path: '/upload',
           name: 'upload',
           component:  () => import('../views/FileUpload.vue'),
+        },
+        {
+          path: '/aiChat',
+          name: 'aiChat',
+          component:  () => import('../views/AiResponse.vue'),
         }
       ]
     },

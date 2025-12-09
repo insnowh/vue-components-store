@@ -81,6 +81,8 @@ const signOut = () => {
             </el-sub-menu>
             <el-menu-item index="dictManagement">字典管理</el-menu-item>
             <el-menu-item index="upload">文件上传</el-menu-item>
+            <el-menu-item index="aiChat">AI问答</el-menu-item>
+            
             </el-menu>
         </el-aside>
 

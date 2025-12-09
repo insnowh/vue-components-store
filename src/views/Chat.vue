@@ -36,10 +36,7 @@ import { getUserConversations, createSingleConversation, createGroupConversation
       title: string | null;
       type: number | null;
     }
-
     
-
-
     let conversationMessages = ref<ConversationMessages>()
 
     let chatUser = ref<ChatUser>({
@@ -57,7 +54,6 @@ import { getUserConversations, createSingleConversation, createGroupConversation
       isConnected, 
       messages, 
       connect, 
-      // sendMessage: sendStompMessage, 
       sendMessage, 
       disconnect,
       isConnecting, 
@@ -90,14 +86,7 @@ import { getUserConversations, createSingleConversation, createGroupConversation
          }).catch(error => {
            console.error("获取会话详情失败:", error);
          });
-
-         // 获取会话消息列表
-        // getConversationMessages(item.id).then(response => {
-        //   conversationMessages.value = response;
-        //   console.log("获取会话消息列表:", response);
-        // }).catch(error => {
-        //   console.error("获取会话消息列表失败:", error);
-        // });
+          // 获取会话消息列表
         getConversationMessages(item.id).then(async response => {
           // 保持原有赋值逻辑
           conversationMessages.value = response;
@@ -139,16 +128,6 @@ import { getUserConversations, createSingleConversation, createGroupConversation
         console.log(conversationMessages?.value?.data);
         nv.splice(0, nv.length); // 清空 messages，避免重复处理
         
-        // const newArr = Array.isArray(nv) ? nv : []
-        // const oldArr = Array.isArray(ov) ? ov : []
-        // if (newArr.length > oldArr.length) {
-        //   const toAppend = newArr.slice(oldArr.length)
-        //   if (!conversationMessages.value) conversationMessages.value = { data: [] }
-        //   if (!conversationMessages.value.data) conversationMessages.value.data = []
-        //   conversationMessages.value.data.push(...toAppend as any)
-        // }
-        // console.log(conversationMessages?.value?.data);
-        
       },
       { deep: true }
     )
@@ -175,19 +154,11 @@ import { getUserConversations, createSingleConversation, createGroupConversation
           timestamp: new Date().toISOString(),
           messageType: 1
         };
-        
-        // 发送到后端 @MessageMapping 方法
-        // sendStompMessage('/chat.send', message);
 
         sendMessage('/chat/send', message, {
             'priority': 'normal',
             'persistent': 'true'
           });
-
-          // sendMessage('/private-chat', message, {
-          //   'priority': 'normal',
-          //   'persistent': 'true'
-          // });
         
         console.log("发送的消息:", message);
         
@@ -243,13 +214,6 @@ import { getUserConversations, createSingleConversation, createGroupConversation
     onMounted(() => {
       // 组件挂载时自动连接
       connectWebSocket();
-
-      // 添加自定义订阅
-      // setTimeout(() => {
-      //   subscribe('/topic/system', handleSystemMessage, {
-      //     'ack': 'client'
-      //   });
-      // }, 1000);
 
       subscribe('/user/queue/messages', handleSystemMessage, {
           'ack': 'client'
