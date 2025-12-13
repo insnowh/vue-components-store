@@ -1,3 +1,5 @@
+[file name]: AiResponse.vue
+[file content begin]
 <template>
   <div id="app">
     <header class="app-header">
@@ -26,6 +28,10 @@
           <span>当前模型:</span>
           <span>{{ aiStore.currentModel }}</span>
         </div>
+        <div class="info-item">
+          <span>历史消息:</span>
+          <span>{{ aiStore.historyLength }} 条</span>
+        </div>
         
         <div class="tips">
           <h4>💡 使用提示</h4>
@@ -34,6 +40,7 @@
             <li>Shift+Enter换行</li>
             <li>流式响应体验更佳</li>
             <li>可随时切换不同模型</li>
+            <li>支持多轮对话历史</li>
           </ul>
         </div>
       </div>
@@ -184,3 +191,4 @@ body {
   }
 }
 </style>
+[file content end]

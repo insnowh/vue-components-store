@@ -13,8 +13,6 @@ console.log('userInfo in Index.vue', userInfo.userInfo);
 
 const BASE_URL = 'http://localhost:8083';
 
-
-
 userInfo.resetUserInfo()
 
 console.log('userInfo after reset in Index.vue', userInfo.userInfo);

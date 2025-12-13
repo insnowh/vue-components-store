@@ -1,8 +1,28 @@
+
 <template>
     <div class="ai-chat">
-        <!-- 连接状态 -->
-        <div :class="['status', isConnected ? 'connected' : 'disconnected']">
-            {{ isConnected ? 'AI已连接' : 'AI未连接' }}
+        <!-- 会话管理区域 -->
+        <div class="chat-header">
+            <div class="session-info">
+                <div v-if="currentSession" class="session-title">
+                    {{ currentSession.title }}
+                </div>
+                <div v-else class="session-title">
+                    新对话
+                </div>
+                <div :class="['status', isConnected ? 'connected' : 'disconnected']">
+                    {{ isConnected ? 'AI已连接' : 'AI未连接' }}
+                </div>
+            </div>
+            
+            <div class="session-controls">
+                <button v-if="isLoggedIn" @click="createNewSession" class="session-btn" title="新对话">
+                    🆕
+                </button>
+                <button v-if="isLoggedIn && currentSession" @click="deleteCurrentSession" class="session-btn delete" title="删除当前对话">
+                    🗑️
+                </button>
+            </div>
         </div>
 
         <!-- 消息展示区域 -->
@@ -16,27 +36,45 @@
 
         <!-- 输入区域 -->
         <div class="input-area">
-            <textarea v-model="inputMessage" @keydown.enter.exact.prevent="send" placeholder="输入您的问题..."></textarea>
-            <button @click="send" :disabled="!isConnected || !inputMessage.trim()">发送</button>
+            <textarea 
+                v-model="inputMessage" 
+                @keydown.enter.exact.prevent="send" 
+                :placeholder="isLoggedIn ? '输入您的问题...' : '请先登录以保存对话'"
+                :disabled="!isConnected"
+            ></textarea>
+            <button @click="send" :disabled="!isConnected || !inputMessage.trim()">
+                发送
+            </button>
             <button @click="toggleConnection" class="connect-btn">
                 {{ isConnected ? '断开连接' : '连接AI' }}
             </button>
         </div>
 
-        <!-- 模型选择 -->
-        <div class="model-selector">
-            <label>选择模型:</label>
-            <select v-model="selectedModel">
-                <option v-for="model in availableModels" :key="model.name" :value="model.name">
-                    {{ model.name }} ({{ (model.size / 1024 / 1024).toFixed(0) }}MB)
-                </option>
-            </select>
+        <!-- 模型选择和用户信息 -->
+        <div class="footer-controls">
+            <div class="model-selector">
+                <label>选择模型:</label>
+                <select v-model="selectedModel" :disabled="!isConnected">
+                    <option v-for="model in availableModels" :key="model.name" :value="model.name">
+                        {{ model.name }} ({{ (model.size / 1024 / 1024).toFixed(0) }}MB)
+                    </option>
+                </select>
+            </div>
+            
+            <div v-if="isLoggedIn" class="user-info">
+                已登录: {{ username }}
+            </div>
+            <div v-else class="login-prompt">
+                <button @click="showLogin = true" class="login-btn">
+                    登录以保存对话
+                </button>
+            </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { aiService, useAIWebSocket } from '@/api/AIService';
 
 // 响应式数据
@@ -46,19 +84,74 @@ const availableModels = ref<any[]>([]);
 const selectedModel = ref('qwen2.5:3b');
 const isReceiving = ref(false);
 const currentAiResponse = ref('');
+const currentSession = ref<any>(null);
+const isLoggedIn = ref(false);
+const username = ref('');
+const showLogin = ref(false);
 
 // WebSocket
-const { isConnected, connect, sendMessage: sendWsMessage, disconnect } = useAIWebSocket();
+const { isConnected, connect, sendMessage: sendWsMessage, disconnect, setUserId } = useAIWebSocket();
 
-// 初始化：加载模型列表
+// 计算属性
+const hasHistory = computed(() => messages.value.length > 0);
+
+// 初始化
 onMounted(async () => {
     try {
+        // 加载模型列表
         const res = await aiService.getModels();
         availableModels.value = res.data || [];
+        
+        // 检查登录状态
+        checkLoginStatus();
+        
+        // 如果有登录用户，加载最近会话
+        if (isLoggedIn.value) {
+            await loadRecentSession();
+        }
     } catch (error) {
-        console.error('加载模型列表失败:', error);
+        console.error('初始化失败:', error);
     }
 });
+
+// 检查登录状态
+const checkLoginStatus = () => {
+    // 从localStorage或cookie获取登录状态
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (token && user) {
+        isLoggedIn.value = true;
+        username.value = JSON.parse(user).username;
+        
+        // 设置用户ID到aiService
+        const userId = JSON.parse(user).id;
+        setUserId(userId);
+    }
+};
+
+// 加载最近会话
+const loadRecentSession = async () => {
+    try {
+        const sessionId = aiService.getCurrentSessionId();
+        if (sessionId) {
+            const response = await aiService.getSessionWithMessages(sessionId);
+            if (response.code === 200 && response.data) {
+                currentSession.value = response.data.session;
+                // 转换消息格式
+                const dbMessages = response.data.messages || [];
+                messages.value = dbMessages
+                    .filter((msg: any) => msg.role !== 'SYSTEM')
+                    .map((msg: any) => ({
+                        role: msg.role.toLowerCase() === 'user' ? 'user' : 'ai',
+                        content: msg.content
+                    }));
+            }
+        }
+    } catch (error) {
+        console.error('加载会话失败:', error);
+    }
+};
 
 // 连接/断开WebSocket
 const toggleConnection = () => {
@@ -74,6 +167,13 @@ const handleWsMessage = (data: any) => {
     switch (data.type) {
         case 'connected':
             console.log('AI服务已连接');
+            if (data.sessionId && !currentSession.value) {
+                // 如果是新创建的会话，更新当前会话
+                currentSession.value = {
+                    id: data.sessionId,
+                    title: '新对话'
+                };
+            }
             break;
         case 'start':
             isReceiving.value = true;
@@ -92,16 +192,65 @@ const handleWsMessage = (data: any) => {
             break;
         case 'end':
             isReceiving.value = false;
+            // 如果已登录，可以在这里同步消息到数据库
             break;
         case 'error':
             console.error('AI服务错误:', data.message);
             messages.value.push({ role: 'ai', content: `错误: ${data.message}` });
+            break;
+        case 'history_loaded':
+            // 数据库加载的历史消息
+            if (data.messages) {
+                messages.value = data.messages.map((msg: any) => ({
+                    role: msg.role === 'user' ? 'user' : 'ai',
+                    content: msg.content
+                }));
+            }
             break;
     }
 };
 
 const handleWsError = (error: Event) => {
     console.error('WebSocket错误:', error);
+};
+
+// 创建新会话
+const createNewSession = async () => {
+    try {
+        const response = await aiService.createSession('新对话', selectedModel.value);
+        if (response.code === 200 && response.data) {
+            currentSession.value = response.data;
+            messages.value = [];
+            
+            // 重新连接WebSocket以使用新会话
+            if (isConnected.value) {
+                disconnect();
+                setTimeout(() => {
+                    connect(handleWsMessage, handleWsError);
+                }, 500);
+            }
+        }
+    } catch (error) {
+        console.error('创建会话失败:', error);
+    }
+};
+
+// 删除当前会话
+const deleteCurrentSession = async () => {
+    if (!currentSession.value || !confirm('确定要删除当前对话吗？此操作不可撤销。')) {
+        return;
+    }
+    
+    try {
+        const response = await aiService.deleteSession(currentSession.value.id);
+        if (response.code === 200) {
+            currentSession.value = null;
+            messages.value = [];
+            aiService.clearCurrentSession();
+        }
+    } catch (error) {
+        console.error('删除会话失败:', error);
+    }
 };
 
 // 发送消息
@@ -111,6 +260,11 @@ const send = async () => {
     const userMessage = inputMessage.value;
     messages.value.push({ role: 'user', content: userMessage });
     inputMessage.value = '';
+
+    // 如果是第一条消息且没有会话，为登录用户创建会话
+    if (isLoggedIn.value && !currentSession.value && messages.value.length === 1) {
+        await createNewSession();
+    }
 
     // 方法1: 使用WebSocket流式响应
     if (isConnected.value) {
@@ -123,7 +277,6 @@ const send = async () => {
                 message: userMessage, 
                 model: selectedModel.value 
             });
-            // AxiosResponse has `status`; check HTTP status and presence of data
             if (res.status === 200 && res.data) {
                 messages.value.push({ role: 'ai', content: res.data.content });
             } else {
@@ -142,86 +295,80 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.ai-chat {
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 16px;
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.status {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
+/* 保持原有样式，新增以下样式 */
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 12px;
-    display: inline-block;
-}
-.status.connected {
-    background-color: #e8f5e9;
-    color: #2e7d32;
-}
-.status.disconnected {
-    background-color: #ffebee;
-    color: #c62828;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e0e0e0;
 }
 
-.message-container {
-    min-height: 300px;
-    max-height: 400px;
-    overflow-y: auto;
-    border: 1px solid #f0f0f0;
-    border-radius: 4px;
-    padding: 12px;
-    margin-bottom: 12px;
+.session-info {
+    flex: 1;
 }
 
-.message {
-    margin-bottom: 8px;
-    padding: 8px;
-    border-radius: 4px;
-}
-.message:nth-child(odd) {
-    background-color: #f9f9f9;
+.session-title {
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 4px;
+    font-size: 14px;
 }
 
-.input-area {
+.session-controls {
     display: flex;
     gap: 8px;
-    margin-bottom: 12px;
 }
-.input-area textarea {
-    flex: 1;
-    padding: 8px;
+
+.session-btn {
+    padding: 4px 8px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    resize: vertical;
+    background: white;
+    cursor: pointer;
+    font-size: 14px;
 }
-.input-area button {
-    padding: 8px 16px;
-    background-color: #1976d2;
+
+.session-btn.delete {
+    color: #dc3545;
+}
+
+.session-btn:hover {
+    background-color: #f5f5f5;
+}
+
+.footer-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.user-info {
+    font-size: 12px;
+    color: #666;
+}
+
+.login-prompt {
+    font-size: 12px;
+}
+
+.login-btn {
+    padding: 4px 8px;
+    background-color: #007bff;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-}
-.input-area button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-.connect-btn {
-    background-color: #757575 !important;
+    font-size: 12px;
 }
 
-.model-selector {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
+.login-btn:hover {
+    background-color: #0056b3;
 }
-.model-selector select {
-    padding: 4px 8px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-}
+
+/* 其他原有样式保持不变 */
 </style>

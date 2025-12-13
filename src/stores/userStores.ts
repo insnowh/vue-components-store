@@ -1,4 +1,5 @@
 
+
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import JWTUtils from "@/utils/jwtUtils";
@@ -41,12 +42,16 @@ export const useInfoStore = defineStore('userInfo', () => {
     }
   }
 
+  function getUserInfo() {
+    return userInfo.value;
+  }
+
   // 不要忘记返回状态和函数
   return {
     userInfo,
     setUserInfo,
     reset,
-    resetUserInfo
+    resetUserInfo,
+    getUserInfo
   };
 });
-
